@@ -56,7 +56,10 @@ func register_point(winner: String) -> void:
 		return
 
 	var receiver := "ai" if winner == "player" else "player"
-	await _ball.get_tree().create_timer(goal_pause_seconds).timeout
+	# process_in_physics=true: пауза отсчитывается по физическим тикам, а не
+	# по idle-времени — держит её на той же временной шкале, что и всю
+	# остальную игровую логику (и что предсказуемо для headless-тестов).
+	await _ball.get_tree().create_timer(goal_pause_seconds, true, true).timeout
 	_serve_toward(receiver)
 
 

@@ -25,6 +25,10 @@ func _run() -> void:
 	var shadow: MeshInstance3D = ball.get_node("ShadowMesh")
 	var paddle: Area3D = main.get_node("PlayerPaddle")
 
+	# Независимо от того, что задал GameManager при первой подаче -- берём
+	# известную скорость, чтобы траектория (и момент возможного гола) была
+	# предсказуемой.
+	ball.launch(Vector3(0.0, 8.0, 0.0))
 	await _check_ground_tracking(ball, shadow)
 	await _check_paddle_surface(ball, shadow, paddle)
 
@@ -51,6 +55,11 @@ func _check_paddle_surface(ball: Area3D, shadow: MeshInstance3D, paddle: Area3D)
 
 	paddle.position = Vector3(0.0, 1.0, 5.0)
 	paddle._previous_position = paddle.position
+	# launch() снимает "мяч замер после гола" (см. ball.gd _physics_process) --
+	# без этого, если мяч успел набрать очко за 60 кадров предыдущей проверки,
+	# физика (и вместе с ней _update_shadow) вообще не выполняется, и тень
+	# просто не сдвинется на следующий кадр.
+	ball.launch(Vector3.ZERO)
 	ball.position = Vector3(0.0, 3.0, 5.0) # прямо над веслом
 	await physics_frame
 	var world_shadow_y: float = ball.position.y + shadow.position.y
@@ -61,6 +70,7 @@ func _check_paddle_surface(ball: Area3D, shadow: MeshInstance3D, paddle: Area3D)
 	# Огромное смещение по X гарантирует отсутствие пересечения с ЛЮБЫМ
 	# веслом независимо от его текущего Z (AI-весло тоже в группе "paddles"
 	# и могло само куда-то уехать за предыдущие проверки).
+	ball.launch(Vector3.ZERO)
 	ball.position = Vector3(-999.0, 3.0, 5.0)
 	await physics_frame
 	world_shadow_y = ball.position.y + shadow.position.y

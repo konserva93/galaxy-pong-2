@@ -62,6 +62,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _point_scored_this_rally:
+		return # очко уже начислено — мяч замирает, ждёт следующей подачи от GameManager
+
 	var y_before := position.y
 
 	velocity.y += ball_gravity * delta
@@ -96,6 +99,7 @@ func launch(new_velocity: Vector3) -> void:
 	# Новый запуск = новый розыгрыш: никто ещё не отбивал, очко ещё не начислено.
 	_last_hitter_side = ""
 	_point_scored_this_rally = false
+	visible = true
 
 
 func _check_paddle_hits(y_before: float, y_after: float) -> void:
@@ -183,13 +187,22 @@ func _check_out_of_bounds() -> void:
 	if within_bounds:
 		return
 
+	var winner: String
 	if _last_hitter_side == "":
-		return # никто ещё не отбивал в этом розыгрыше -- штрафовать некого
+		# Никто ещё не отбивал (например, не приняли подачу, и мяч улетел за
+		# границы раньше, чем успел коснуться пола) — некого штрафовать по
+		# правилу аута, поэтому считаем это как обычное "не принял подачу":
+		# очко сопернику половины, где сейчас мяч (та же логика, что и при
+		# касании пола). Раньше в этом случае функция просто выходила без
+		# счёта — мяч продолжал лететь и мог не вернуться никогда, это баг.
+		winner = "ai" if position.z > 0.0 else "player"
+	else:
+		winner = "ai" if _last_hitter_side == "player" else "player"
 
-	var winner := "ai" if _last_hitter_side == "player" else "player"
 	_score_point(winner)
 
 
 func _score_point(winner: String) -> void:
 	_point_scored_this_rally = true
+	visible = false # не висеть в воздухе/за краем поля до следующей подачи
 	point_scored.emit(winner)

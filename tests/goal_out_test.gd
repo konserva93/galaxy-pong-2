@@ -4,7 +4,10 @@ extends SceneTree
 ## - касание пола на своей/чужой половине начисляет очко правильной стороне;
 ## - аут по X и по Z штрафует последнего отбившего, а не привязан к тому,
 ##   на чьей половине мяч вышел за границы;
-## - аут без единого удара за розыгрыш не начисляет очко (некого штрафовать);
+## - аут БЕЗ единого удара за розыгрыш (например, не приняли подачу) всё
+##   равно начисляет очко (по правилу "чья половина" — как при касании пола),
+##   а не оставляет мяч без начисления — раньше это был баг: розыгрыш мог
+##   никогда не завершиться, мяч просто улетал навсегда;
 ## - сигнал point_scored не срабатывает повторно в рамках одного розыгрыша;
 ## - сигнал доходит до GameManager.register_point.
 ##
@@ -38,9 +41,9 @@ func _run() -> void:
 	ball.velocity = Vector3(0.0, -4.0, 0.0)
 	_received.clear()
 	await physics_frame
-	print("[floor, player half] received=%s GameManager.last_point_winner=%s" % [_received, game_manager.last_point_winner])
+	print("[floor, player half] received=%s GameManager.ai_score=%d" % [_received, game_manager.ai_score])
 	_ok = _ok and _received == ["ai"]
-	_ok = _ok and game_manager.last_point_winner == "ai"
+	_ok = _ok and game_manager.ai_score == 1
 
 	ball.launch(Vector3(0.0, -4.0, 0.0)) # launch() сбрасывает состояние розыгрыша
 	ball.position = Vector3(0.0, 0.05, -3.0) # половина AI
@@ -67,13 +70,15 @@ func _run() -> void:
 	print("[out via Z, last hitter ai] received=%s" % [_received])
 	_ok = _ok and _received == ["player"]
 
+	# Аут без единого удара -- не должен зависать без результата: очко по
+	# правилу "чья половина" (мяч на положительной Z, половине игрока -> AI).
 	ball.launch(Vector3(0.0, 0.0, 0.0))
-	ball.position = Vector3(0.0, 3.0, 0.0)
+	ball.position = Vector3(0.0, 3.0, 5.0)
 	_received.clear()
 	ball.position.x = 6.0
 	await physics_frame
-	print("[out, no hitter yet] received=%s (expect empty)" % [_received])
-	_ok = _ok and _received.is_empty()
+	print("[out, no hitter yet -> falls back to half-based rule] received=%s (expect ['ai'])" % [_received])
+	_ok = _ok and _received == ["ai"]
 
 	ball.launch(Vector3(0.0, -4.0, 0.0))
 	ball.position = Vector3(0.0, 0.05, 3.0)
