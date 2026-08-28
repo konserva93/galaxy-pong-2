@@ -24,12 +24,14 @@ var _mouse_z_screen_range: Vector2
 ## Скорость весла в текущем кадре (для вклада в удар мяча, см. ball.gd).
 var velocity: Vector3 = Vector3.ZERO
 var _previous_position: Vector3
+var _start_position: Vector3
 
 
 func _ready() -> void:
 	position.y = paddle_hit_height
 	_last_mouse_pos = get_viewport().get_mouse_position()
 	_previous_position = position
+	_start_position = position
 
 	var field_width := 10.0
 	var field_length := 16.0
@@ -44,6 +46,13 @@ func _ready() -> void:
 		paddle_size.x / 2.0, paddle_size.y / 2.0,
 		paddle_hit_height, true # половина игрока — Z>0
 	)
+
+
+## Возвращает весло на стартовую позицию (задача 4.3 — рестарт партии).
+func reset_position() -> void:
+	position = _start_position
+	velocity = Vector3.ZERO
+	_previous_position = position
 
 
 func _physics_process(delta: float) -> void:

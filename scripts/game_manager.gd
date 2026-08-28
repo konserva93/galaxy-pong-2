@@ -14,6 +14,7 @@ extends Node
 signal score_changed(player_score: int, ai_score: int)
 signal game_over(winner: String)
 signal state_changed(new_state: String) # "Playing" / "Paused"
+signal restart_requested # main.gd слушает, чтобы вернуть вёсла на стартовые позиции
 
 const SCORE_TO_WIN: int = 7
 
@@ -81,10 +82,11 @@ func register_point(winner: String) -> void:
 	if player_score >= SCORE_TO_WIN or ai_score >= SCORE_TO_WIN:
 		is_game_over = true
 		var overall_winner := "player" if player_score >= SCORE_TO_WIN else "ai"
-		# Экрана победы/поражения ещё нет (задача 4.3) — без этого сообщения
-		# игра просто молча перестаёт подавать мяч, что на плейтесте выглядит
-		# как "мяч потерялся" без объяснения причины.
-		print("GAME OVER — победил: %s (счёт %d:%d). Экран окончания игры — задача 4.3; чтобы сыграть снова, перезапустите сцену." % [overall_winner, player_score, ai_score])
+		# Останавливаем всю геймплейную физику (вёсла тоже) тем же механизмом,
+		# что и обычная пауза (4.2) — иначе вёсла продолжали бы двигаться на
+		# фоне экрана окончания игры. is_paused НЕ трогаем: это отдельное
+		# состояние от ручной паузы (Esc всё равно заблокирован is_game_over).
+		get_tree().paused = true
 		game_over.emit(overall_winner)
 		return
 
@@ -93,6 +95,20 @@ func register_point(winner: String) -> void:
 	# остальную игровую логику (и что предсказуемо для headless-тестов).
 	await _ball.get_tree().create_timer(goal_pause_seconds, true, true).timeout
 	_serve_toward(winner) # подаём в сторону выигравшего предыдущее очко, не промахнувшегося
+
+
+## Сброс счёта и позиций, новая партия (задача 4.3). Снимает паузу, наложенную
+## при game_over, сбрасывает вёсла (через restart_requested — main.gd) и мяч,
+## затем стартует первую подачу партии.
+func restart_game() -> void:
+	get_tree().paused = false
+	is_game_over = false
+	is_paused = false
+	player_score = 0
+	ai_score = 0
+	score_changed.emit(player_score, ai_score)
+	restart_requested.emit()
+	start_first_serve()
 
 
 func _serve_toward(target: String) -> void:

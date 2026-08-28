@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game_over_screen.gd" id="1_game_over_screen"]
+
+[node name="GameOverScreen" type="Control"]
+process_mode = 3
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+script = ExtResource("1_game_over_screen")
+
+[node name="DimBackground" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="WinnerLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 44
+text = "Ты выиграл!"
+
+[node name="RestartButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(220, 50)
+theme_override_font_sizes/font_size = 24
+text = "Рестарт"
+
+[node name="ExitButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(220, 50)
+theme_override_font_sizes/font_size = 24
+text = "Выход"
