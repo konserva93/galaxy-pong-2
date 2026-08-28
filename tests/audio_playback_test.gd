@@ -4,7 +4,8 @@ extends SceneTree
 ## - удар веслом (ball.paddle_hit) запускает PaddleHitSound;
 ## - очко (ball.point_scored) запускает GoalSound, независимо от победителя;
 ## - фоновая музыка (AmbientMusic) запускается и РЕАЛЬНО зацикливается ПОСЛЕ
-##   естественного конца клипа (8с), а не просто молчит после первого прохода;
+##   естественного конца клипа (длина берётся из самого файла, сейчас это
+##   `ambient_sound_of_galaxy.wav`), а не просто молчит после первого прохода;
 ## - относительная громкость: фоновая музыка тише SFX (GameDesign 7 —
 ##   "негромкая" эмбиент-музыка).
 ##
@@ -21,8 +22,9 @@ extends SceneTree
 ## loop_begin/loop_end, autoplay сцены убран.
 ##
 ## Запуск: см. reference-godot-cli в памяти проекта. Этот тест реально ждёт
-## ~8.5 секунды по настоящему времени (аудио синхронизировано с реальным
-## временем, не с физическими тиками) — дольше остальных тестов, но это
+## чуть больше длины эмбиент-клипа по настоящему времени (аудио
+## синхронизировано с реальным временем, не с физическими тиками) — дольше
+## остальных тестов, но это
 ## единственный надёжный способ поймать регресс именно этого бага.
 
 var _ok := true
@@ -110,7 +112,7 @@ func _check_relative_volume(paddle_hit_sound: AudioStreamPlayer, goal_sound: Aud
 
 
 func _check_ambient_actually_loops_past_clip_end(ambient_music: AudioStreamPlayer) -> void:
-	print("--- ambient music is still playing (looped) past its own 8s clip length ---")
+	print("--- ambient music is still playing (looped) past its own clip length ---")
 
 	var clip_length: float = ambient_music.stream.get_length()
 	var start_ms := Time.get_ticks_msec()

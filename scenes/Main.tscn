@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Field.tscn" id="2_field"]
@@ -10,20 +10,62 @@
 [ext_resource type="PackedScene" path="res://scenes/GameOverScreen.tscn" id="8_game_over_screen"]
 [ext_resource type="AudioStream" path="res://audio/paddle_hit.wav" id="9_paddle_hit_sfx"]
 [ext_resource type="AudioStream" path="res://audio/goal.wav" id="10_goal_sfx"]
-[ext_resource type="AudioStream" path="res://audio/ambient_loop.wav" id="11_ambient_music"]
+[ext_resource type="AudioStream" path="res://audio/ambient_sound_of_galaxy.wav" id="11_ambient_music"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_space"]
+sky_top_color = Color(0.008, 0.008, 0.02, 1)
+sky_horizon_color = Color(0.06, 0.03, 0.1, 1)
+sky_curve = 0.15
+ground_bottom_color = Color(0.008, 0.008, 0.02, 1)
+ground_horizon_color = Color(0.06, 0.03, 0.1, 1)
+ground_curve = 0.02
+sun_angle_max = 2.0
+
+[sub_resource type="Sky" id="Sky_space"]
+sky_material = SubResource("ProceduralSkyMaterial_space")
 
 [sub_resource type="Environment" id="Environment_basic"]
-background_mode = 1
-background_color = Color(0.05, 0.05, 0.08, 1)
+background_mode = 2
+sky = SubResource("Sky_space")
 ambient_light_source = 2
 ambient_light_color = Color(0.6, 0.6, 0.65, 1)
 ambient_light_energy = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_star"]
+shading_mode = 0
+albedo_color = Color(1, 1, 1, 1)
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 2.0
+billboard_mode = 3
+
+[sub_resource type="QuadMesh" id="QuadMesh_star"]
+material = SubResource("StandardMaterial3D_star")
+size = Vector2(0.06, 0.06)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_star"]
+emission_shape = 2
+emission_sphere_radius = 60.0
+direction = Vector3(0, 0, 0)
+spread = 0.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.0
+initial_velocity_max = 0.0
+scale_min = 0.4
+scale_max = 1.6
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_basic")
+
+[node name="Stars" type="GPUParticles3D" parent="."]
+amount = 700
+lifetime = 200.0
+preprocess = 200.0
+draw_pass_1 = SubResource("QuadMesh_star")
+process_material = SubResource("ParticleProcessMaterial_star")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 position = Vector3(0, 6, 0)
