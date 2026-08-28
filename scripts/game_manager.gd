@@ -7,7 +7,9 @@ extends Node
 ## После каждого очка (сигнал ball.point_scored → register_point): счёт
 ## обновляется, при достижении SCORE_TO_WIN — game_over и подачи
 ## останавливаются; иначе — пауза GOAL_PAUSE_SECONDS и автоподача в сторону
-## принимающего (того, кто пропустил предыдущее очко — GameDesign 3.4).
+## того, кто выиграл предыдущее очко (GameDesign 3.4; по прямому запросу
+## после плейтеста — раньше подавали в сторону промахнувшегося, что
+## ощущалось неправильно).
 
 signal score_changed(player_score: int, ai_score: int)
 signal game_over(winner: String)
@@ -59,18 +61,17 @@ func register_point(winner: String) -> void:
 		game_over.emit(overall_winner)
 		return
 
-	var receiver := "ai" if winner == "player" else "player"
 	# process_in_physics=true: пауза отсчитывается по физическим тикам, а не
 	# по idle-времени — держит её на той же временной шкале, что и всю
 	# остальную игровую логику (и что предсказуемо для headless-тестов).
 	await _ball.get_tree().create_timer(goal_pause_seconds, true, true).timeout
-	_serve_toward(receiver)
+	_serve_toward(winner) # подаём в сторону выигравшего предыдущее очко, не промахнувшегося
 
 
-func _serve_toward(receiver: String) -> void:
+func _serve_toward(target: String) -> void:
 	if _ball == null:
 		return
 
 	_ball.position = _ball_start_position
-	var z_direction := 1.0 if receiver == "player" else -1.0
+	var z_direction := 1.0 if target == "player" else -1.0
 	_ball.launch(Vector3(0.0, serve_launch_vy, serve_horizontal_speed * z_direction))

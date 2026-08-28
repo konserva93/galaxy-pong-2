@@ -5,7 +5,9 @@ extends SceneTree
 ## - при старте сцены сразу происходит первая подача (без паузы);
 ## - point_scored увеличивает счёт и эмитит score_changed;
 ## - после гола — пауза goal_pause_seconds, затем автоподача в сторону
-##   принимающего (того, кто ПРОПУСТИЛ предыдущее очко — GameDesign 3.4);
+##   ВЫИГРАВШЕГО предыдущее очко (GameDesign 3.4; направление исправлено по
+##   прямому запросу после плейтеста — раньше ошибочно подавали в сторону
+##   промахнувшегося);
 ## - мяч замирает и скрывается сразу в момент гола (а не продолжает падать/
 ##   лететь на виду всю паузу — было "мяч долго падает после гола");
 ## - розыгрыш без единого удара, ушедший в аут, всё равно доходит до подачи
@@ -62,11 +64,11 @@ func _run() -> void:
 
 
 func _check_point_and_reserve(game_manager: Node, ball: Area3D) -> void:
-	print("--- point scored -> score_changed, pause, then serve toward receiver ---")
+	print("--- point scored -> score_changed, pause, then serve toward the winner ---")
 
 	_score_changed_events.clear()
 	var start_pos: Vector3 = ball.position
-	# AI получает очко (игрок "пропустил") -> принимающий следующей подачи — игрок (Z>0).
+	# AI выигрывает очко -> следующая подача летит в сторону AI (Z<0), не игрока.
 	ball._score_point("ai")
 	await physics_frame
 
@@ -83,8 +85,8 @@ func _check_point_and_reserve(game_manager: Node, ball: Area3D) -> void:
 	for i in range(frames_to_wait):
 		await physics_frame
 
-	print("after pause: ball.position=%s ball.velocity=%s (expect vz>0, served toward player)" % [ball.position, ball.velocity])
-	_ok = _ok and ball.velocity.z > 0.0
+	print("after pause: ball.position=%s ball.velocity=%s (expect vz<0, served toward ai -- the winner)" % [ball.position, ball.velocity])
+	_ok = _ok and ball.velocity.z < 0.0
 
 
 func _check_ball_freezes_and_hides_during_pause(game_manager: Node, ball: Area3D) -> void:
