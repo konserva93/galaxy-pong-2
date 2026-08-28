@@ -21,7 +21,7 @@ extends Area3D
 
 @export var paddle_speed: float = 12.0
 @export var paddle_hit_height: float = 1.0
-@export var paddle_size: Vector2 = Vector2(2.0, 1.2) # X ширина, Z глубина
+@export var paddle_size: Vector2 = Vector2(2.0, 1.8) # X ширина, Z глубина
 @export var mouse_follow_speed: float = 15.0
 @export_node_path("Node3D") var field_path: NodePath
 
@@ -43,10 +43,15 @@ var _mouse_calibrated: bool = false
 var _mouse_x_screen_range: Vector2
 var _mouse_z_screen_range: Vector2
 
+## Скорость весла в текущем кадре (для вклада в удар мяча, см. ball.gd).
+var velocity: Vector3 = Vector3.ZERO
+var _previous_position: Vector3
+
 
 func _ready() -> void:
 	position.y = paddle_hit_height
 	_last_mouse_pos = get_viewport().get_mouse_position()
+	_previous_position = position
 
 	if _field != null:
 		_field_width = _field.field_width
@@ -75,6 +80,9 @@ func _physics_process(delta: float) -> void:
 	_apply_keyboard_movement(delta)
 	_apply_mouse_movement(delta, camera)
 	_clamp_to_bounds(camera)
+
+	velocity = (position - _previous_position) / delta
+	_previous_position = position
 
 
 func _apply_keyboard_movement(delta: float) -> void:

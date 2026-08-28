@@ -7,12 +7,12 @@ albedo_color = Color(0, 0.9, 1, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_paddle"]
 material = SubResource("StandardMaterial3D_paddle")
-size = Vector3(2, 0.3, 1.2)
+size = Vector3(2, 0.3, 1.8)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_paddle"]
-size = Vector3(2, 0.3, 1.2)
+size = Vector3(2, 0.3, 1.8)
 
-[node name="PlayerPaddle" type="Area3D"]
+[node name="PlayerPaddle" type="Area3D" groups=["paddles"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 6)
 script = ExtResource("1_paddle")
 

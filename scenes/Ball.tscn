@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/ball.gd" id="1_ball"]
 
@@ -13,6 +13,17 @@ height = 0.6
 [sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
 radius = 0.3
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.45)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_shadow"]
+material = SubResource("StandardMaterial3D_shadow")
+top_radius = 0.35
+bottom_radius = 0.35
+height = 0.02
+
 [node name="Ball" type="Area3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("1_ball")
@@ -22,3 +33,6 @@ mesh = SubResource("SphereMesh_ball")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_ball")
+
+[node name="ShadowMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_shadow")
