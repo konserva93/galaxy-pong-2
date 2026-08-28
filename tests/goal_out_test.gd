@@ -9,7 +9,14 @@ extends SceneTree
 ##   а не оставляет мяч без начисления — раньше это был баг: розыгрыш мог
 ##   никогда не завершиться, мяч просто улетал навсегда;
 ## - сигнал point_scored не срабатывает повторно в рамках одного розыгрыша;
-## - сигнал доходит до GameManager.register_point.
+## - сигнал доходит до GameManager.register_point;
+## - когда мяч ОДНОВРЕМЕННО (в один и тот же физический тик) уже вне границ
+##   поля и пересекает пол -- побеждает правило аута (штраф отбившему), а не
+##   правило "чья половина" (которое в этом случае наградило бы именно того,
+##   кто выбил мяч за пределы). Регрессия конкретного бага: пол проверялся
+##   раньше аута и не знал о границах поля ("бесконечный пол"), так что мяч,
+##   уже улетевший за пределы, но всё ещё падающий под гравитацией, рано или
+##   поздно пересекал Y=0 и засчитывался по правилу половины.
 ##
 ## Запуск: см. reference-godot-cli в памяти проекта.
 
@@ -87,6 +94,18 @@ func _run() -> void:
 		await physics_frame
 	print("[no double-score over 10 frames] received=%s (expect exactly 1 entry)" % [_received])
 	_ok = _ok and _received.size() == 1
+
+	# Мяч уже за пределами поля по Z (AI-половина, z<0) И одновременно
+	# пересекает пол в этом же тике. Правило половины наградило бы "player"
+	# (мяч упал на половине AI) -- но выбивший его за пределы (player) должен
+	# получить ШТРАФ, очко сопернику ("ai"). Это и есть тот самый баг.
+	ball.launch(Vector3(0.0, -4.0, 0.0))
+	ball.position = Vector3(0.0, 0.05, -8.5) # уже вне |z|<=field_length/2=8, и y пересечёт 0 в этот же тик
+	ball._last_hitter_side = "player"
+	_received.clear()
+	await physics_frame
+	print("[out+floor same tick, last hitter player] received=%s (expect ['ai'] -- out-of-bounds penalty, not the half-based rule)" % [_received])
+	_ok = _ok and _received == ["ai"]
 
 	print("RESULT: ", "PASS" if _ok else "FAIL")
 	quit(0 if _ok else 1)
