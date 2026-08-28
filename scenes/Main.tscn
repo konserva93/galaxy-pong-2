@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Field.tscn" id="2_field"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerPaddle.tscn" id="3_paddle"]
 [ext_resource type="PackedScene" path="res://scenes/Ball.tscn" id="4_ball"]
+[ext_resource type="PackedScene" path="res://scenes/AIPaddle.tscn" id="5_paddle_ai"]
 
 [sub_resource type="Environment" id="Environment_basic"]
 background_mode = 1
@@ -27,6 +28,10 @@ light_energy = 1.1
 
 [node name="PlayerPaddle" parent="." instance=ExtResource("3_paddle")]
 field_path = NodePath("../Field")
+
+[node name="AIPaddle" parent="." instance=ExtResource("5_paddle_ai")]
+field_path = NodePath("../Field")
+ball_path = NodePath("../Ball")
 
 [node name="Ball" parent="." instance=ExtResource("4_ball")]
 
