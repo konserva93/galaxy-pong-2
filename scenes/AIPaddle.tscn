@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://bglyh2pgqgh2s"]
 
-[ext_resource type="Script" path="res://scripts/paddle_ai.gd" id="1_paddle_ai"]
+[ext_resource type="Script" uid="uid://diu3pkd6q2x3c" path="res://scripts/paddle_ai.gd" id="1_paddle_ai"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_paddle_ai"]
 albedo_color = Color(1, 0.2, 0.55, 1)
@@ -12,12 +12,13 @@ size = Vector3(2, 0.3, 1.8)
 [sub_resource type="BoxShape3D" id="BoxShape3D_paddle_ai"]
 size = Vector3(2, 0.3, 1.8)
 
-[node name="AIPaddle" type="Area3D" groups=["paddles"]]
+[node name="AIPaddle" type="Area3D" unique_id=284184333 groups=["paddles"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -6)
 script = ExtResource("1_paddle_ai")
+ai_paddle_speed = 5.0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1528858298]
 mesh = SubResource("BoxMesh_paddle_ai")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1750086622]
 shape = SubResource("BoxShape3D_paddle_ai")

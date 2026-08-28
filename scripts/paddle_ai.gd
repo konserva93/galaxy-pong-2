@@ -46,6 +46,8 @@ var _bounds: PaddleBounds
 var _rng := RandomNumberGenerator.new()
 var _was_reacting := false
 var _current_error := Vector2.ZERO
+var _prev_ball_y := 0.0
+var _missed_return_count := 0 ## для тестов -- считает срабатывания _check_missed_return
 
 ## Скорость весла в текущем кадре (для вклада в удар мяча, см. ball.gd).
 var velocity: Vector3 = Vector3.ZERO
@@ -66,6 +68,8 @@ func _ready() -> void:
 
 	if _ball == null:
 		push_warning("AIPaddle: ball_path не назначен, AI не сможет реагировать на мяч")
+	else:
+		_prev_ball_y = _ball.position.y
 
 	_bounds = PaddleBounds.new(
 		field_width, field_length,
@@ -79,6 +83,8 @@ func _physics_process(delta: float) -> void:
 	if camera != null and not _bounds.z_calibrated:
 		_bounds.calibrate_z(camera)
 
+	_check_missed_return()
+
 	var target := _compute_target()
 	position.x = move_toward(position.x, target.x, ai_paddle_speed * delta)
 	position.z = move_toward(position.z, target.y, ai_paddle_speed * delta)
@@ -89,6 +95,26 @@ func _physics_process(delta: float) -> void:
 
 	velocity = (position - _previous_position) / delta
 	_previous_position = position
+
+
+## Отладочный вывод: мяч пересёк paddle_hit_height сверху вниз, ЛЕТЯ К AI
+## (velocity.z < 0, т.е. это не последствие уже состоявшегося отбития — сразу
+## после удара velocity.z становится >= 0), пока AI активно реагировал на
+## него (_was_reacting) -- значит удара не произошло, AI не поймал мяч,
+## который был "его". Строгое "< paddle_hit_height" (а не "<=") принципиально
+## отличает это от кадра самого удара, где ball.gd снапает Y ровно на
+## paddle_hit_height, а не ниже.
+func _check_missed_return() -> void:
+	if _ball == null:
+		return
+
+	var ball_y: float = _ball.position.y
+	var crossed_downward := _prev_ball_y > paddle_hit_height and ball_y < paddle_hit_height
+	if _was_reacting and crossed_downward and _ball.velocity.z < 0.0:
+		_missed_return_count += 1
+		print("AI missed a return: ball crossed paddle_hit_height at x=%.2f z=%.2f (AI was at x=%.2f z=%.2f)" % [_ball.position.x, _ball.position.z, position.x, position.z]) # TODO: временный отладочный вывод, убрать после проверки
+
+	_prev_ball_y = ball_y
 
 
 func _compute_target() -> Vector2:
