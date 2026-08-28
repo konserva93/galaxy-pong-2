@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/paddle_player.gd" id="1_paddle"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_paddle"]
+size = Vector3(2, 0.3, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_paddle"]
+size = Vector3(2, 0.3, 1.2)
+
+[node name="PlayerPaddle" type="Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 6)
+script = ExtResource("1_paddle")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_paddle")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_paddle")

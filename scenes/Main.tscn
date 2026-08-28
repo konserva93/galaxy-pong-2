@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/Field.tscn" id="2_field"]
+[ext_resource type="PackedScene" path="res://scenes/PlayerPaddle.tscn" id="3_paddle"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Field" parent="." instance=ExtResource("2_field")]
+
+[node name="PlayerPaddle" parent="." instance=ExtResource("3_paddle")]
+field_path = NodePath("../Field")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 14)
+fov = 50.0
