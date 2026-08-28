@@ -11,12 +11,31 @@ extends Area3D
 ## общей логикой в ball.gd (весло состоит в группе "paddles"), той же
 ## формулой, что и у игрока.
 ##
-## Погрешность прицеливания (ai_error_offset) — тюнинг сложности, задача 3.1,
-## сюда пока не входит.
+## Погрешность прицеливания (ai_error_offset): каждый раз, когда AI заново
+## начинает целиться в мяч (см. AIM_DIE_SIDES/AIM_MISS_THRESHOLD ниже),
+## "бросается" d21 — равномерно распределённое целое 1..21 (без нормального
+## распределения, как и положено кубику); при результате меньше
+## AIM_MISS_THRESHOLD — гарантированный промах: цель весла отклоняется от
+## точной прогнозируемой точки ровно настолько, чтобы мяч оказался вне
+## площади весла (по X ИЛИ по Z, выбирается случайно), но не сильнее, чем
+## нужно для этого — весло всё равно остаётся рядом с местом приземления, а
+## не мажет вслепую в сторону. Бросок и оффсет фиксируются один раз за
+## "заход" (пока мяч непрерывно летит к AI), а не каждый кадр — иначе весло
+## дёргалось бы каждый тик.
+##
+## ai_error_offset — верхняя граница оффсета по "гарантирующей промах" оси;
+## должен быть больше соответствующей половины paddle_size, иначе гарантия
+## промаха невозможна (в этом случае оффсет расширяется автоматически, см.
+## _generate_guaranteed_miss_offset).
+
+const AIM_DIE_SIDES := 21
+const AIM_MISS_THRESHOLD := 5 ## бросок < 5 (т.е. 1..4) -> гарантированный промах
+const AIM_MISS_MARGIN := 0.05 ## запас сверх половины весла, чтобы промах не был "впритык"
 
 @export var ai_paddle_speed: float = 10.0
 @export var paddle_hit_height: float = 1.0
 @export var paddle_size: Vector2 = Vector2(2.0, 1.8) # X ширина, Z глубина
+@export var ai_error_offset: float = 1.2
 @export_node_path("Node3D") var field_path: NodePath
 @export_node_path("Area3D") var ball_path: NodePath
 
@@ -24,6 +43,9 @@ extends Area3D
 @onready var _ball: Area3D = get_node_or_null(ball_path)
 
 var _bounds: PaddleBounds
+var _rng := RandomNumberGenerator.new()
+var _was_reacting := false
+var _current_error := Vector2.ZERO
 
 ## Скорость весла в текущем кадре (для вклада в удар мяча, см. ball.gd).
 var velocity: Vector3 = Vector3.ZERO
@@ -75,10 +97,50 @@ func _compute_target() -> Vector2:
 	if _ball == null:
 		return home_center
 
-	if _ball.velocity.z < 0.0:
-		return _predict_ball_landing()
+	if not _ball.visible:
+		# Мяч замер и скрыт на паузе после гола (см. ball.gd/_score_point) —
+		# его velocity.z в этот момент "застыл" таким же, каким был перед
+		# голом, и не сигнализирует, куда полетит следующая подача. Без этого
+		# сброса заход, начавшийся ДО гола, не завершался (velocity.z не
+		# успевал стать >=0), и следующая подача в сторону AI наследовала
+		# старый бросок d21 (в том числе промах) вместо нового.
+		_was_reacting = false
+		return home_center
 
+	if _ball.velocity.z < 0.0:
+		if not _was_reacting:
+			_was_reacting = true
+			var roll := _rng.randi_range(1, AIM_DIE_SIDES)
+			print("AI d21 roll: %d (%s)" % [roll, "miss" if roll < AIM_MISS_THRESHOLD else "hit"]) # TODO: временный отладочный вывод, убрать после проверки
+			if roll < AIM_MISS_THRESHOLD:
+				_current_error = _generate_guaranteed_miss_offset()
+			else:
+				_current_error = Vector2.ZERO
+		return _predict_ball_landing() + _current_error
+
+	_was_reacting = false
 	return home_center
+
+
+## Оффсет по одной случайно выбранной оси (X или Z), гарантированно
+## превышающий соответствующую половину paddle_size — мяч на точной
+## прогнозируемой точке окажется вне площади весла (см. ball._is_within_paddle),
+## значит удара не будет. Величина по этой оси — от границы весла с небольшим
+## запасом (AIM_MISS_MARGIN) до ai_error_offset (расширяется, если тот
+## меньше границы). Вторая ось получает небольшой оффсет в пределах своей
+## половины весла — не влияет на гарантию промаха, просто разнообразит цель.
+func _generate_guaranteed_miss_offset() -> Vector2:
+	var half_size: Vector2 = paddle_size / 2.0
+	var sign: float = 1.0 if _rng.randf() < 0.5 else -1.0
+
+	if _rng.randf() < 0.5:
+		var lower: float = half_size.x + AIM_MISS_MARGIN
+		var upper: float = maxf(ai_error_offset, lower + AIM_MISS_MARGIN)
+		return Vector2(sign * _rng.randf_range(lower, upper), _rng.randf_range(-half_size.y, half_size.y))
+
+	var lower_z: float = half_size.y + AIM_MISS_MARGIN
+	var upper_z: float = maxf(ai_error_offset, lower_z + AIM_MISS_MARGIN)
+	return Vector2(_rng.randf_range(-half_size.x, half_size.x), sign * _rng.randf_range(lower_z, upper_z))
 
 
 func _predict_ball_landing() -> Vector2:

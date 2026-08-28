@@ -28,6 +28,17 @@ func _run() -> void:
 
 	var ai: Area3D = main.get_node("AIPaddle")
 	var ball: Area3D = main.get_node("Ball")
+	var game_manager: Node = root.get_node("GameManager")
+
+	# Этот тест напрямую подставляет ball.position/velocity, чтобы проверить
+	# именно логику преследования/idle-возврата весла AI в изоляции. Если не
+	# отключить связь со счётом, реальный GameManager может (и будет: мяч,
+	# запущенный с vy=0 из y=10, по факту касается пола ещё ВНУТРИ первого
+	# 60-кадрового цикла из-за полу-неявного Эйлера) зафиксировать гол и сам
+	# запустить новую подачу в сторону AI прямо посреди фазы "мяч улетает от
+	# AI" -- это сбивало весло с idle-возврата и делало тест флейки.
+	if ball.point_scored.is_connected(game_manager.register_point):
+		ball.point_scored.disconnect(game_manager.register_point)
 
 	_check_landing_time_prediction(ai)
 	await _check_tracking_and_idle_return(ai, ball)
