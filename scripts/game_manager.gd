@@ -52,6 +52,10 @@ func register_point(winner: String) -> void:
 	if player_score >= SCORE_TO_WIN or ai_score >= SCORE_TO_WIN:
 		is_game_over = true
 		var overall_winner := "player" if player_score >= SCORE_TO_WIN else "ai"
+		# Экрана победы/поражения ещё нет (задача 4.3) — без этого сообщения
+		# игра просто молча перестаёт подавать мяч, что на плейтесте выглядит
+		# как "мяч потерялся" без объяснения причины.
+		print("GAME OVER — победил: %s (счёт %d:%d). Экран окончания игры — задача 4.3; чтобы сыграть снова, перезапустите сцену." % [overall_winner, player_score, ai_score])
 		game_over.emit(overall_winner)
 		return
 
