@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Field.tscn" id="2_field"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/Ball.tscn" id="4_ball"]
 [ext_resource type="PackedScene" path="res://scenes/AIPaddle.tscn" id="5_paddle_ai"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/PauseMenu.tscn" id="7_pause_menu"]
 
 [sub_resource type="Environment" id="Environment_basic"]
 background_mode = 1
@@ -44,3 +45,5 @@ fov = 50.0
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="HUD" parent="UI" instance=ExtResource("6_hud")]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("7_pause_menu")]

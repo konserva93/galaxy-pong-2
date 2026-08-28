@@ -302,10 +302,10 @@ Main.tscn (Node3D)                       — main.gd: собирает сцен�
  ├─ AIPaddle (Area3D)                    — paddle_ai.gd: та же механика, авто-цель
  ├─ Ball (Area3D)                        — ball.gd: гравитация, парабола, отбитие,
  │                                          детекция гола/аута → сигнал point_scored
- └─ UI (CanvasLayer)                     — пока не реализовано, см. раздел 6/этап 4
+ └─ UI (CanvasLayer)
      ├─ HUD                              — hud.gd (слушает сигналы GameManager)
-     ├─ PauseMenu
-     └─ GameOverScreen
+     ├─ PauseMenu                        — pause_menu.gd (слушает state_changed)
+     └─ GameOverScreen                   — пока не реализовано, см. этап 4.3
 
 Autoload (singleton): GameManager.gd
  — счёт игрока и AI (player_score/ai_score), is_game_over
@@ -324,9 +324,11 @@ Autoload (singleton): GameManager.gd
   визуально скорректированных под параллакс камеры, вынесена в отдельный
   переиспользуемый класс `paddle_bounds.gd` (`PaddleBounds`) — не было в исходной
   архитектуре, понадобилось, чтобы не дублировать эту математику для второго весла.*
-- *Явного состояния `Playing`/`Paused`/`GameOver` как перечисления пока нет — только
-  булев `is_game_over`; `Paused`, HUD, `PauseMenu`, `GameOverScreen` — задачи этапа 4,
-  ещё не реализованы (`state_changed` объявлен, но пока ничем не эмитится).*
+- *Явного состояния `Playing`/`Paused`/`GameOver` как перечисления по\-прежнему нет —
+  вместо этого два независимых булевых флага (`is_paused`, `is_game_over`).
+  `state_changed` теперь эмитится, но только `"Playing"`/`"Paused"` (пауза реализована
+  через движковый `get_tree().paused`, см. 4.2); `GameOverScreen` — ещё не реализован
+  (задача 4.3).*
 
 Логика столкновений и движения — вручную во `_physics_process` каждого скрипта, без
 `RigidBody3D`, чтобы поведение было полностью предсказуемым и легко настраиваемым.

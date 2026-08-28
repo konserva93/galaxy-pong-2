@@ -13,7 +13,7 @@ extends Node
 
 signal score_changed(player_score: int, ai_score: int)
 signal game_over(winner: String)
-signal state_changed(new_state: String)
+signal state_changed(new_state: String) # "Playing" / "Paused"
 
 const SCORE_TO_WIN: int = 7
 
@@ -24,9 +24,36 @@ const SCORE_TO_WIN: int = 7
 var player_score: int = 0
 var ai_score: int = 0
 var is_game_over: bool = false
+var is_paused: bool = false
 
 var _ball: Area3D
 var _ball_start_position: Vector3
+
+
+func _ready() -> void:
+	# Autoload по умолчанию остановился бы вместе с остальной сценой при
+	# get_tree().paused=true -- а именно этому узлу нужно продолжать слушать
+	# Esc, чтобы снять паузу обратно.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if is_game_over:
+		return
+	if event.is_action_pressed("pause"):
+		toggle_pause()
+
+
+## Ставит/снимает паузу через движковый get_tree().paused — вся игровая
+## логика (вёсла, мяч) использует стандартный process_mode по умолчанию, так
+## что просто останавливается сама; UI (PauseMenu) и сам GameManager явно
+## помечены PROCESS_MODE_ALWAYS, чтобы продолжать реагировать на ввод.
+func toggle_pause() -> void:
+	if is_game_over:
+		return
+	is_paused = not is_paused
+	get_tree().paused = is_paused
+	state_changed.emit("Paused" if is_paused else "Playing")
 
 
 func register_ball(ball: Area3D, start_position: Vector3) -> void:
