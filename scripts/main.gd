@@ -15,6 +15,7 @@ var _ball_start_position: Vector3
 func _ready() -> void:
 	_camera.look_at(Vector3.ZERO, Vector3.UP)
 	_ball_start_position = _ball.position
+	_ball.point_scored.connect(GameManager.register_point)
 	# Временный тестовый запуск мяча в сторону игрока для задач 1.3/1.4.
 	# Будет заменён подачей от GameManager в задаче 1.7.
 	_ball.launch(BALL_LAUNCH_VELOCITY)

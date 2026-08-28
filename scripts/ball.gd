@@ -1,19 +1,32 @@
 extends Area3D
 
 ## Мяч: баллистическое движение (парабола) — гравитация действует на vy,
-## позиция обновляется по velocity * delta. Отбивание веслом — ниже.
-## Гол/аут — в задаче 1.6.
+## позиция обновляется по velocity * delta. Отбивание веслом, гол/аут — ниже.
 ##
 ## Отбитие засчитывается, когда Y мяча пересекает paddle_hit_height весла и
 ## его XZ-позиция в этот момент попадает в площадь весла (см. GameDesign 3.3).
 ## Вёсла ищутся по группе "paddles", чтобы работать одинаково и с игроком, и
-## с AI (появится в задаче 1.5) без изменений в этом скрипте.
+## с AI без изменений в этом скрипте.
+##
+## Гол засчитывается (см. GameDesign 3.4), когда:
+## - мяч коснулся пола (Y=0) — вне зависимости от того, был он до этого отбит
+##   или нет, очко получает сторона, ПРОТИВОПОЛОЖНАЯ той половине, где мяч
+##   упал (упал на своей половине без отбития — очко сопернику; упал на
+##   половине соперника после отбития — очко бьющему; правило одно и то же
+##   для обоих случаев, отдельно их различать не нужно);
+## - мяч улетел за пределы поля по X или Z, не задев ни пол, ни весло — очко
+##   получает соперник последнего, кто отбивал мяч (аут = штраф бьющему,
+##   поэтому здесь важно именно кто бил последним, а не где мяч вышел).
+##
+## Реальные хранение счёта/подача после гола — в GameManager, задача 1.7;
+## здесь только детекция и сигнал point_scored.
 
 @export var ball_gravity: float = -20.0
 @export var ball_launch_vy: float = 8.0
 @export var ball_hit_forward_speed: float = 8.0
 @export var ball_hit_horizontal_factor: float = 3.0
 @export var paddle_velocity_influence: float = 0.5
+@export_node_path("Node3D") var field_path: NodePath
 
 const SHADOW_GROUND_Y: float = 0.02
 const SHADOW_MIN_SCALE: float = 0.35
@@ -23,15 +36,29 @@ const SHADOW_HEIGHT_SHRINK_FACTOR: float = 0.15
 # изменится.
 const SHADOW_PADDLE_SURFACE_OFFSET: float = 0.17
 
+signal point_scored(winner: String) # "player" или "ai"
+
 var velocity: Vector3 = Vector3.ZERO
 
 var _paddles: Array[Node] = []
+@onready var _field: Node3D = get_node_or_null(field_path)
+var _field_width: float = 10.0
+var _field_length: float = 16.0
+
+var _last_hitter_side: String = "" # "player"/"ai", пусто — ещё никто не отбивал в этом розыгрыше
+var _point_scored_this_rally: bool = false
 
 @onready var _shadow: MeshInstance3D = $ShadowMesh
 
 
 func _ready() -> void:
 	_paddles = get_tree().get_nodes_in_group("paddles")
+
+	if _field != null:
+		_field_width = _field.field_width
+		_field_length = _field.field_length
+	else:
+		push_warning("Ball: field_path не назначен, используются размеры поля по умолчанию")
 
 
 func _physics_process(delta: float) -> void:
@@ -41,6 +68,8 @@ func _physics_process(delta: float) -> void:
 	position += velocity * delta
 
 	_check_paddle_hits(y_before, position.y)
+	_check_floor_touch(y_before, position.y)
+	_check_out_of_bounds()
 	_update_shadow()
 
 
@@ -64,6 +93,9 @@ func _update_shadow() -> void:
 
 func launch(new_velocity: Vector3) -> void:
 	velocity = new_velocity
+	# Новый запуск = новый розыгрыш: никто ещё не отбивал, очко ещё не начислено.
+	_last_hitter_side = ""
+	_point_scored_this_rally = false
 
 
 func _check_paddle_hits(y_before: float, y_after: float) -> void:
@@ -122,3 +154,42 @@ func _apply_hit(paddle: Node, hit_height: float) -> void:
 	# Финальная гарантия "только вперёд" даже если вклад скорости весла
 	# (paddle_velocity_influence) тянул бы мяч назад.
 	velocity.z = absf(velocity.z) * forward_sign
+
+	_last_hitter_side = "player" if paddle.position.z > 0.0 else "ai"
+
+
+func _check_floor_touch(y_before: float, y_after: float) -> void:
+	if _point_scored_this_rally:
+		return
+
+	# Строгое неравенство по той же причине, что и в _check_paddle_hits —
+	# не пересчитывать повторно после того, как мяч уже провалился под пол.
+	var crossed_downward := y_before > 0.0 and y_after <= 0.0
+	if not crossed_downward:
+		return
+
+	# Мяч упал на своей половине (Z>0 — половина игрока) — очко сопернику
+	# (AI), и наоборот. Одно и то же правило верно и для "не отбил свой
+	# мяч", и для "отбил мяч на половину соперника" — см. заголовок файла.
+	var winner := "ai" if position.z > 0.0 else "player"
+	_score_point(winner)
+
+
+func _check_out_of_bounds() -> void:
+	if _point_scored_this_rally:
+		return
+
+	var within_bounds := absf(position.x) <= _field_width / 2.0 and absf(position.z) <= _field_length / 2.0
+	if within_bounds:
+		return
+
+	if _last_hitter_side == "":
+		return # никто ещё не отбивал в этом розыгрыше -- штрафовать некого
+
+	var winner := "ai" if _last_hitter_side == "player" else "player"
+	_score_point(winner)
+
+
+func _score_point(winner: String) -> void:
+	_point_scored_this_rally = true
+	point_scored.emit(winner)

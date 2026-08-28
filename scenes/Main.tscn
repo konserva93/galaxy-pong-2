@@ -34,6 +34,7 @@ field_path = NodePath("../Field")
 ball_path = NodePath("../Ball")
 
 [node name="Ball" parent="." instance=ExtResource("4_ball")]
+field_path = NodePath("../Field")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 14)
