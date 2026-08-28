@@ -1,12 +1,27 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Field.tscn" id="2_field"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerPaddle.tscn" id="3_paddle"]
 [ext_resource type="PackedScene" path="res://scenes/Ball.tscn" id="4_ball"]
 
+[sub_resource type="Environment" id="Environment_basic"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.08, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.6, 0.65, 1)
+ambient_light_energy = 0.6
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_basic")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 6, 0)
+rotation_degrees = Vector3(-50, -30, 0)
+light_energy = 1.1
 
 [node name="Field" parent="." instance=ExtResource("2_field")]
 
