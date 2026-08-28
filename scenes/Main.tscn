@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/Field.tscn" id="2_field"]
@@ -8,6 +8,9 @@
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="6_hud"]
 [ext_resource type="PackedScene" path="res://scenes/PauseMenu.tscn" id="7_pause_menu"]
 [ext_resource type="PackedScene" path="res://scenes/GameOverScreen.tscn" id="8_game_over_screen"]
+[ext_resource type="AudioStream" path="res://audio/paddle_hit.wav" id="9_paddle_hit_sfx"]
+[ext_resource type="AudioStream" path="res://audio/goal.wav" id="10_goal_sfx"]
+[ext_resource type="AudioStream" path="res://audio/ambient_loop.wav" id="11_ambient_music"]
 
 [sub_resource type="Environment" id="Environment_basic"]
 background_mode = 1
@@ -50,3 +53,17 @@ fov = 50.0
 [node name="PauseMenu" parent="UI" instance=ExtResource("7_pause_menu")]
 
 [node name="GameOverScreen" parent="UI" instance=ExtResource("8_game_over_screen")]
+
+[node name="Audio" type="Node" parent="."]
+
+[node name="PaddleHitSound" type="AudioStreamPlayer" parent="Audio"]
+stream = ExtResource("9_paddle_hit_sfx")
+volume_db = -3.0
+
+[node name="GoalSound" type="AudioStreamPlayer" parent="Audio"]
+stream = ExtResource("10_goal_sfx")
+volume_db = -2.0
+
+[node name="AmbientMusic" type="AudioStreamPlayer" parent="Audio"]
+stream = ExtResource("11_ambient_music")
+volume_db = -9.0

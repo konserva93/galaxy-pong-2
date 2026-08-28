@@ -301,11 +301,16 @@ Main.tscn (Node3D)                       — main.gd: собирает сцен�
  │                                          фиксированная высота paddle_hit_height
  ├─ AIPaddle (Area3D)                    — paddle_ai.gd: та же механика, авто-цель
  ├─ Ball (Area3D)                        — ball.gd: гравитация, парабола, отбитие,
- │                                          детекция гола/аута → сигнал point_scored
- └─ UI (CanvasLayer)
-     ├─ HUD                              — hud.gd (слушает сигналы GameManager)
-     ├─ PauseMenu                        — pause_menu.gd (слушает state_changed)
-     └─ GameOverScreen                   — game_over_screen.gd (слушает game_over)
+ │                                          детекция гола/аута → сигналы point_scored,
+ │                                          paddle_hit
+ ├─ UI (CanvasLayer)
+ │   ├─ HUD                              — hud.gd (слушает сигналы GameManager)
+ │   ├─ PauseMenu                        — pause_menu.gd (слушает state_changed)
+ │   └─ GameOverScreen                   — game_over_screen.gd (слушает game_over)
+ └─ Audio (Node)
+     ├─ PaddleHitSound (AudioStreamPlayer) — слушает ball.paddle_hit
+     ├─ GoalSound (AudioStreamPlayer)      — слушает ball.point_scored
+     └─ AmbientMusic (AudioStreamPlayer)   — autoplay, зациклена в коде (main.gd)
 
 Autoload (singleton): GameManager.gd
  — счёт игрока и AI (player_score/ai_score), is_game_over

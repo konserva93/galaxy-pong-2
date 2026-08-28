@@ -37,6 +37,7 @@ const SHADOW_HEIGHT_SHRINK_FACTOR: float = 0.15
 const SHADOW_PADDLE_SURFACE_OFFSET: float = 0.17
 
 signal point_scored(winner: String) # "player" или "ai"
+signal paddle_hit # для звука удара (задача 5.2) — без параметров, самого факта отбития достаточно
 
 var velocity: Vector3 = Vector3.ZERO
 
@@ -168,6 +169,7 @@ func _apply_hit(paddle: Node, hit_height: float) -> void:
 	velocity.z = absf(velocity.z) * forward_sign
 
 	_last_hitter_side = "player" if paddle.position.z > 0.0 else "ai"
+	paddle_hit.emit()
 
 
 func _check_floor_touch(y_before: float, y_after: float) -> void:
