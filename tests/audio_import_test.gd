@@ -1,0 +1,43 @@
+extends SceneTree
+
+## Регрессия для задачи 5.1 (подготовка звуковых файлов): проверяет, что все
+## три плейсхолдер-SFX импортированы и загружаются как AudioStreamWAV с
+## разумной длительностью и частотой дискретизации.
+##
+## Зацикливание эмбиент-лупа сюда НЕ входит: ручная правка `loop_mode` в
+## `.wav.import` через headless CLI (без реального открытия импорт-дока в
+## редакторе) не долетала до итогового ресурса при загрузке -- надёжно
+## воспроизводимо оказалось только выставление `AudioStreamWAV.loop_mode` в
+## коде при настройке плеера, поэтому это отложено на задачу 5.2 (там и тест
+## на зацикливание).
+##
+## Запуск: см. reference-godot-cli в памяти проекта.
+
+var _ok := true
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	_check_sfx("res://audio/paddle_hit.wav", 0.08, 0.20)
+	_check_sfx("res://audio/goal.wav", 0.35, 0.65)
+	_check_sfx("res://audio/ambient_loop.wav", 7.0, 9.0)
+
+	print("RESULT: ", "PASS" if _ok else "FAIL")
+	quit(0 if _ok else 1)
+
+
+func _check_sfx(path: String, min_len: float, max_len: float) -> void:
+	var stream: AudioStreamWAV = load(path)
+	var loaded := stream != null
+	print("%s: loaded=%s" % [path, loaded])
+	_ok = _ok and loaded
+	if not loaded:
+		return
+
+	var length: float = stream.get_length()
+	print("  length=%.3fs mix_rate=%d (expect %.2f..%.2fs, 44100Hz)" % [length, stream.mix_rate, min_len, max_len])
+	_ok = _ok and length >= min_len and length <= max_len
+	_ok = _ok and stream.mix_rate == 44100
