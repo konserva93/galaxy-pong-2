@@ -36,6 +36,17 @@ const SHADOW_HEIGHT_SHRINK_FACTOR: float = 0.15
 # Подогнать, если толщина меша весла изменится.
 const SHADOW_PADDLE_SURFACE_OFFSET: float = 0.1
 
+# Скорость мяча (длина вектора velocity), при которой след/свечение достигают
+# полной интенсивности — ориентировочно (сумма ball_launch_vy/ball_hit_forward_speed
+# по умолчанию), подобрать точнее на живом плейтесте, как и остальные константы
+# баланса (см. GameDesign 3.1 про ai_paddle_speed/ai_error_offset).
+const GLOW_SPEED_REFERENCE: float = 14.0
+const GLOW_MIN_RATIO: float = 0.15 # след/свет не гаснут полностью даже у апекса параболы
+const LIGHT_BASE_ENERGY: float = 0.8
+const LIGHT_SPEED_ENERGY: float = 0.06
+const LIGHT_PULSE_AMPLITUDE: float = 0.15
+const LIGHT_PULSE_SPEED: float = 6.0 # рад/сек
+
 signal point_scored(winner: String) # "player" или "ai"
 signal paddle_hit # для звука удара (задача 5.2) — без параметров, самого факта отбития достаточно
 
@@ -50,6 +61,10 @@ var _last_hitter_side: String = "" # "player"/"ai", пусто — ещё ник
 var _point_scored_this_rally: bool = false
 
 @onready var _shadow: MeshInstance3D = $ShadowMesh
+@onready var _light: OmniLight3D = $BallLight
+@onready var _trail: GPUParticles3D = $Trail
+
+var _pulse_time: float = 0.0
 
 
 func _ready() -> void:
@@ -83,6 +98,7 @@ func _physics_process(delta: float) -> void:
 	_check_out_of_bounds()
 	_check_floor_touch(y_before, position.y)
 	_update_shadow()
+	_update_glow(delta)
 
 
 func _update_shadow() -> void:
@@ -101,6 +117,23 @@ func _update_shadow() -> void:
 	_shadow.position.y = surface_y - position.y
 	var shadow_scale: float = clamp(1.0 - position.y * SHADOW_HEIGHT_SHRINK_FACTOR, SHADOW_MIN_SCALE, 1.0)
 	_shadow.scale = Vector3(shadow_scale, 1.0, shadow_scale)
+
+
+func _update_glow(delta: float) -> void:
+	# След и свет ярче на быстрых участках параболы (взлёт/приземление) и
+	# тусклее у апекса, где скорость минимальна — этого добиваемся просто
+	# завязкой на полную длину velocity, без отдельной проверки оси Y: по
+	# траектории параболы горизонтальная составляющая скорости примерно
+	# постоянна между ударами, так что общая скорость и так проседает у
+	# апекса и растёт к краям дуги (см. GameDesign 5).
+	_pulse_time += delta
+	var speed := velocity.length()
+	var speed_ratio: float = clamp(speed / GLOW_SPEED_REFERENCE, GLOW_MIN_RATIO, 1.0)
+
+	_trail.amount_ratio = speed_ratio
+
+	var pulse := sin(_pulse_time * LIGHT_PULSE_SPEED) * LIGHT_PULSE_AMPLITUDE
+	_light.light_energy = LIGHT_BASE_ENERGY + LIGHT_SPEED_ENERGY * speed + pulse
 
 
 func launch(new_velocity: Vector3) -> void:
