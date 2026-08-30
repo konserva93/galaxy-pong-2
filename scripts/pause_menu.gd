@@ -18,7 +18,7 @@ extends Control
 
 @onready var _settings_panel: Control = $SettingsPanel
 @onready var _resolution_option: OptionButton = $SettingsPanel/VBoxContainer/ResolutionRow/ResolutionOption
-@onready var _fullscreen_check: CheckBox = $SettingsPanel/VBoxContainer/FullscreenRow/FullscreenCheck
+@onready var _fullscreen_check: Button = $SettingsPanel/VBoxContainer/FullscreenRow/FullscreenCheck
 @onready var _music_slider: HSlider = $SettingsPanel/VBoxContainer/MusicRow/MusicSlider
 @onready var _sfx_slider: HSlider = $SettingsPanel/VBoxContainer/SfxRow/SfxSlider
 @onready var _back_button: Button = $SettingsPanel/VBoxContainer/BackButton

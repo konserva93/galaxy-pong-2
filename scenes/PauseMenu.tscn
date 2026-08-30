@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/pause_menu.gd" id="1_pause_menu"]
 [ext_resource type="Theme" path="res://theme/neon_theme.tres" id="2_neon_theme"]
+[ext_resource type="Script" path="res://scripts/neon_checkbox.gd" id="3_neon_checkbox"]
 
 [node name="PauseMenu" type="Control"]
 process_mode = 3
@@ -96,7 +97,8 @@ theme_override_colors/font_color = Color(0.85, 0.85, 0.92, 1)
 theme_override_font_sizes/font_size = 18
 text = "Полноэкранный"
 
-[node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/VBoxContainer/FullscreenRow"]
+[node name="FullscreenCheck" type="Button" parent="SettingsPanel/VBoxContainer/FullscreenRow"]
+script = ExtResource("3_neon_checkbox")
 
 [node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/VBoxContainer"]
 theme_override_constants/separation = 16
