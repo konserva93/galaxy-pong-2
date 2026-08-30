@@ -234,16 +234,17 @@ new_velocity.z = abs(new_velocity.z) * forward_sign          # финальна�
 
 ## 5\. Визуальный стиль — Neon Galaxy
 
-*Этот раздел описывает финальный визуальный проход (этап 6 DevelopmentPlan, ещё не
-сделан). Для удобства плейтеста уже раньше появились временные черновые версии части
-этого — без цели быть финальным визуалом: базовый `WorldEnvironment` (тёмный фон \+
-ambient\-свет, без skybox/звёзд/тумана) \+ `DirectionalLight3D`; сплошные (не
-эмиссивные) цвета весла игрока (циан) и AI (оранжево\-розовый) — уже те же оттенки, что
-описаны ниже, просто без эмиссии/bloom.*
+*Этот раздел описывает финальный визуальный проход (этап 6 DevelopmentPlan). Фон (6.1)
+уже сделан — см. пункт ниже. Остальное (материалы поля/весла 6.2, мяч/след 6.3,
+постобработка 6.4, стиль UI 6.5) — ещё нет; до этого момента играбельность
+поддерживалась временными черновыми версиями части этого визуала (не по плану, для
+удобства плейтеста): сплошные (не эмиссивные) цвета весла игрока (циан) и AI
+(оранжево\-розовый) — уже те же оттенки, что описаны ниже, просто без эмиссии/bloom.*
 
-- **Фон**\: `WorldEnvironment` с `Sky` (панорама туманности/звёзд или процедурный
-  `ProceduralSkyMaterial` с тёмным горизонтом и звёздами); опционально пара слоёв частиц
-  (`GPUParticles3D`) с точечными звёздами для параллакса.
+- **Фон** ✅\: `WorldEnvironment` с `Sky` (`ProceduralSkyMaterial`, тёмный горизонт с еле
+  заметным фиолетовым оттенком в тон неоновой палитре) \+ статичное звёздное поле
+  (`GPUParticles3D`, точечные квадраты). *Без параллакса от движения камеры — камера в
+  этом MVP статична (раздел 4), просто фон.*
 - **Поле**\: тёмная полупрозрачная/матовая плоскость с эмиссивной сеткой линий (боковые
   границы, центральная линия — граница между половинами, как разделительная линия/сетка
   на референсе) — `StandardMaterial3D` с `emission_enabled = true`, цвет неона на выбор
@@ -291,6 +292,7 @@ ambient\-свет, без skybox/звёзд/тумана) \+ `DirectionalLight3D
 Main.tscn (Node3D)                       — main.gd: собирает сцену, регистрирует мяч
  │                                          в GameManager (сама не хранит игровую логику)
  ├─ WorldEnvironment                     — skybox, glow, fog
+ ├─ Stars (GPUParticles3D)                — статичное звёздное поле (задача 6.1)
  ├─ Camera3D                             — статичная, см. раздел 4
  ├─ Field (Node3D)
  │   ├─ FieldMesh (MeshInstance3D)       — визуал поля/сетки, две половины
@@ -301,11 +303,16 @@ Main.tscn (Node3D)                       — main.gd: собирает сцен�
  │                                          фиксированная высота paddle_hit_height
  ├─ AIPaddle (Area3D)                    — paddle_ai.gd: та же механика, авто-цель
  ├─ Ball (Area3D)                        — ball.gd: гравитация, парабола, отбитие,
- │                                          детекция гола/аута → сигнал point_scored
- └─ UI (CanvasLayer)
-     ├─ HUD                              — hud.gd (слушает сигналы GameManager)
-     ├─ PauseMenu                        — pause_menu.gd (слушает state_changed)
-     └─ GameOverScreen                   — game_over_screen.gd (слушает game_over)
+ │                                          детекция гола/аута → сигналы point_scored,
+ │                                          paddle_hit
+ ├─ UI (CanvasLayer)
+ │   ├─ HUD                              — hud.gd (слушает сигналы GameManager)
+ │   ├─ PauseMenu                        — pause_menu.gd (слушает state_changed)
+ │   └─ GameOverScreen                   — game_over_screen.gd (слушает game_over)
+ └─ Audio (Node)
+     ├─ PaddleHitSound (AudioStreamPlayer) — слушает ball.paddle_hit
+     ├─ GoalSound (AudioStreamPlayer)      — слушает ball.point_scored
+     └─ AmbientMusic (AudioStreamPlayer)   — autoplay, зациклена в коде (main.gd)
 
 Autoload (singleton): GameManager.gd
  — счёт игрока и AI (player_score/ai_score), is_game_over
