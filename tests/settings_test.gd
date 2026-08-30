@@ -1,15 +1,16 @@
 extends SceneTree
 
 ## Регрессия для autoload Settings (подменю "Настройки" в паузе):
-## - значения по умолчанию (когда user://settings.cfg ещё нет);
+## - значения по умолчанию (когда settings.cfg ещё нет);
 ## - set_* сразу применяет (аудио-шины Music/SFX) и сохраняет на диск;
 ## - сохранённые значения переживают "перезапуск" (свежая загрузка ConfigFile
 ##   с диска даёт то же самое, что было сохранено).
 ##
-## Чистит за собой user://settings.cfg в начале и в конце -- иначе прогон
-## этого теста оставлял бы файл, который исказил бы значения по умолчанию,
-## подхватываемые следующим запуском headless-тестов (Settings._ready()
-## грузит с диска при старте КАЖДОГО процесса godot, включая другие тесты).
+## Файл (см. settings.gd -- рядом с игрой, в редакторе/тестах это корень
+## проекта) чистится за собой в начале и в конце -- иначе прогон этого теста
+## оставлял бы его, искажая значения по умолчанию, которые подхватит
+## следующий запуск headless-тестов (Settings._ready() грузит с диска при
+## старте КАЖДОГО процесса godot, включая другие тесты).
 ##
 ## Запуск: см. reference-godot-cli в памяти проекта.
 
@@ -21,30 +22,29 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	_delete_settings_file()
+	var settings: Node = root.get_node("Settings")
+	_delete_settings_file(settings)
 
 	var main_scene: PackedScene = load("res://scenes/Main.tscn")
 	var main: Node3D = main_scene.instantiate()
 	root.add_child(main)
 	await physics_frame
 
-	var settings: Node = root.get_node("Settings")
-
 	_check_defaults(settings)
 	_check_resolution_and_fullscreen(settings)
 	_check_volume_applies_to_bus(settings)
 	_check_persists_to_disk(settings)
 
-	_delete_settings_file()
+	_delete_settings_file(settings)
 
 	print("RESULT: ", "PASS" if _ok else "FAIL")
 	quit(0 if _ok else 1)
 
 
-func _delete_settings_file() -> void:
-	var dir := DirAccess.open("user://")
-	if dir != null and dir.file_exists("settings.cfg"):
-		dir.remove("settings.cfg")
+func _delete_settings_file(settings: Node) -> void:
+	var path: String = settings.settings_file_path()
+	if path != "" and FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
 
 
 func _check_defaults(settings: Node) -> void:
@@ -113,7 +113,7 @@ func _check_persists_to_disk(settings: Node) -> void:
 	settings.set_sfx_volume(0.8)
 
 	var config := ConfigFile.new()
-	var load_result := config.load("user://settings.cfg")
+	var load_result := config.load(settings.settings_file_path())
 	print("reload from disk: load_result=%d" % load_result)
 	_ok = _ok and load_result == OK
 	if load_result != OK:

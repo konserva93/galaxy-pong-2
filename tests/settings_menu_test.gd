@@ -7,7 +7,8 @@ extends SceneTree
 ## - закрытие паузы (не через "Назад") сбрасывает меню на MainPanel к
 ##   следующему открытию, а не оставляет его на подменю настроек.
 ##
-## Чистит user://settings.cfg в начале/конце -- та же причина, что и в
+## Чистит settings.cfg (см. settings.gd -- рядом с игрой, в редакторе/тестах
+## это корень проекта) в начале/конце -- та же причина, что и в
 ## settings_test.gd (Settings._ready() грузит с диска при каждом запуске).
 ##
 ## Запуск: см. reference-godot-cli в памяти проекта.
@@ -20,7 +21,8 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	_delete_settings_file()
+	var settings: Node = root.get_node("Settings")
+	_delete_settings_file(settings)
 
 	var main_scene: PackedScene = load("res://scenes/Main.tscn")
 	var main: Node3D = main_scene.instantiate()
@@ -30,22 +32,20 @@ func _run() -> void:
 	var game_manager: Node = root.get_node("GameManager")
 	var pause_menu: Control = main.get_node("UI/PauseMenu")
 
-	var settings: Node = root.get_node("Settings")
-
 	_check_settings_toggle(game_manager, pause_menu)
 	await _check_controls_reflect_and_apply(pause_menu, settings)
 	_check_closing_pause_resets_to_main_panel(game_manager, pause_menu)
 
-	_delete_settings_file()
+	_delete_settings_file(settings)
 
 	print("RESULT: ", "PASS" if _ok else "FAIL")
 	quit(0 if _ok else 1)
 
 
-func _delete_settings_file() -> void:
-	var dir := DirAccess.open("user://")
-	if dir != null and dir.file_exists("settings.cfg"):
-		dir.remove("settings.cfg")
+func _delete_settings_file(settings: Node) -> void:
+	var path: String = settings.settings_file_path()
+	if path != "" and FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
 
 
 func _check_settings_toggle(game_manager: Node, pause_menu: Control) -> void:

@@ -11,8 +11,12 @@ extends Node
 ## В fullscreen ОС всё равно берёт нативное разрешение монитора -- пункт
 ## разрешения в этом случае значения не имеет, но остаётся доступным (просто
 ## возьмётся при следующем переключении в оконный режим).
-
-const SETTINGS_PATH := "user://settings.cfg"
+##
+## Файл настроек — рядом с самой игрой (папка с .exe), не в системном профиле
+## пользователя (%APPDATA%/... на Windows) — так попросил пользователь.
+## OS.has_feature("editor") истинно при любом запуске через сам редактор
+## (обычный Play, headless-скрипты/тесты — вообще всё, кроме реально
+## экспортированной игры), для этих случаев "рядом с игрой" — корень проекта.
 
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1280, 720),
@@ -30,12 +34,30 @@ var fullscreen: bool = false
 var music_volume: float = 1.0 # линейно, 0..1
 var sfx_volume: float = 1.0 # линейно, 0..1
 
+var _settings_path: String = ""
+
 
 func _ready() -> void:
+	_settings_path = _resolve_settings_path()
 	_load()
 	_apply_window()
 	_apply_bus_volume(MUSIC_BUS, music_volume)
 	_apply_bus_volume(SFX_BUS, sfx_volume)
+
+
+## Путь к settings.cfg -- открыт (не приватный), чтобы регрессионные тесты
+## могли явно чистить файл за собой без хардкода пути в двух местах.
+func settings_file_path() -> String:
+	return _settings_path
+
+
+func _resolve_settings_path() -> String:
+	var dir: String
+	if OS.has_feature("editor"):
+		dir = ProjectSettings.globalize_path("res://")
+	else:
+		dir = OS.get_executable_path().get_base_dir()
+	return dir.path_join("settings.cfg")
 
 
 func set_resolution_index(index: int) -> void:
@@ -91,12 +113,12 @@ func _save() -> void:
 	config.set_value("display", "fullscreen", fullscreen)
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("audio", "sfx_volume", sfx_volume)
-	config.save(SETTINGS_PATH)
+	config.save(_settings_path)
 
 
 func _load() -> void:
 	var config := ConfigFile.new()
-	if config.load(SETTINGS_PATH) != OK:
+	if config.load(_settings_path) != OK:
 		return # первый запуск / файла ещё нет -- остаёмся на значениях по умолчанию
 
 	resolution_index = clampi(
