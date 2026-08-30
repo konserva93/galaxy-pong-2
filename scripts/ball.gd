@@ -47,6 +47,14 @@ const LIGHT_SPEED_ENERGY: float = 0.06
 const LIGHT_PULSE_AMPLITUDE: float = 0.15
 const LIGHT_PULSE_SPEED: float = 6.0 # рад/сек
 
+# След — не GPUParticles3D (отдельные "квадратики"/"вспышки" частиц не давали
+# ощущения непрерывной линии, см. правку 2026-08-30), а меш-лента, которая
+# каждый кадр перестраивается по последним позициям мяча — гарантированно
+# непрерывна независимо от скорости мяча/частоты кадров.
+const TRAIL_MAX_POINTS: int = 16
+const TRAIL_MIN_POINT_DISTANCE: float = 0.08 # не копить точки, пока мяч почти не сдвинулся
+const TRAIL_WIDTH: float = 0.24
+
 signal point_scored(winner: String) # "player" или "ai"
 signal paddle_hit # для звука удара (задача 5.2) — без параметров, самого факта отбития достаточно
 
@@ -62,9 +70,14 @@ var _point_scored_this_rally: bool = false
 
 @onready var _shadow: MeshInstance3D = $ShadowMesh
 @onready var _light: OmniLight3D = $BallLight
-@onready var _trail: GPUParticles3D = $Trail
+@onready var _trail_ribbon: MeshInstance3D = $TrailRibbon
 
 var _pulse_time: float = 0.0
+
+# [0] -- самая свежая точка (у мяча), последняя -- самая старая (хвост следа).
+var _trail_points: Array[Vector3] = []
+var _trail_mesh: ArrayMesh
+var _trail_material: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -75,6 +88,22 @@ func _ready() -> void:
 		_field_length = _field.field_length
 	else:
 		push_warning("Ball: field_path не назначен, используются размеры поля по умолчанию")
+
+	_trail_material = StandardMaterial3D.new()
+	_trail_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_trail_material.vertex_color_use_as_albedo = true
+	_trail_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_trail_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_trail_material.emission_enabled = true
+	_trail_material.emission = Color(1, 0.55, 0, 1)
+	_trail_material.emission_energy_multiplier = 2.0
+
+	_trail_mesh = ArrayMesh.new()
+	_trail_ribbon.mesh = _trail_mesh
+	# top_level: вершины ленты пишутся в глобальных координатах (см.
+	# _rebuild_trail_mesh) -- без top_level узел унаследовал бы трансформ
+	# самого мяча и удваивал бы смещение позиции.
+	_trail_ribbon.top_level = true
 
 
 func _physics_process(delta: float) -> void:
@@ -130,10 +159,70 @@ func _update_glow(delta: float) -> void:
 	var speed := velocity.length()
 	var speed_ratio: float = clamp(speed / GLOW_SPEED_REFERENCE, GLOW_MIN_RATIO, 1.0)
 
-	_trail.amount_ratio = speed_ratio
+	_update_trail(speed_ratio)
 
 	var pulse := sin(_pulse_time * LIGHT_PULSE_SPEED) * LIGHT_PULSE_AMPLITUDE
 	_light.light_energy = LIGHT_BASE_ENERGY + LIGHT_SPEED_ENERGY * speed + pulse
+
+
+func _update_trail(speed_ratio: float) -> void:
+	if _trail_points.is_empty() or global_position.distance_to(_trail_points[0]) >= TRAIL_MIN_POINT_DISTANCE:
+		_trail_points.push_front(global_position)
+		if _trail_points.size() > TRAIL_MAX_POINTS:
+			_trail_points.resize(TRAIL_MAX_POINTS)
+	_rebuild_trail_mesh(speed_ratio)
+
+
+func _rebuild_trail_mesh(speed_ratio: float) -> void:
+	_trail_mesh.clear_surfaces()
+
+	var point_count := _trail_points.size()
+	if point_count < 2:
+		return
+
+	# Камера в этом MVP статична (см. GameDesign 4) -- одного направления
+	# "вправо от камеры" на весь след достаточно для читаемой ширины ленты,
+	# без честного billboard на каждый сегмент отдельно.
+	var camera := get_viewport().get_camera_3d()
+	var right := Vector3.RIGHT if camera == null else camera.global_transform.basis.x
+
+	var vertices := PackedVector3Array()
+	var colors := PackedColorArray()
+	var indices := PackedInt32Array()
+
+	for i in range(point_count):
+		# t=1 у головы (рядом с мячом), t=0 у самого старого хвостового конца.
+		var t: float = 1.0 - float(i) / float(point_count - 1)
+		var half_width := TRAIL_WIDTH * 0.5 * t * speed_ratio
+		var point: Vector3 = _trail_points[i]
+		vertices.append(point + right * half_width)
+		vertices.append(point - right * half_width)
+		var col := Color(1.0, 0.6, 0.25, t * speed_ratio)
+		colors.append(col)
+		colors.append(col)
+
+	for i in range(point_count - 1):
+		var base := i * 2
+		indices.append(base)
+		indices.append(base + 1)
+		indices.append(base + 2)
+		indices.append(base + 1)
+		indices.append(base + 3)
+		indices.append(base + 2)
+
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	_trail_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_trail_mesh.surface_set_material(0, _trail_material)
+
+
+func _clear_trail() -> void:
+	_trail_points.clear()
+	if _trail_mesh != null:
+		_trail_mesh.clear_surfaces()
 
 
 func launch(new_velocity: Vector3) -> void:
@@ -142,6 +231,9 @@ func launch(new_velocity: Vector3) -> void:
 	_last_hitter_side = ""
 	_point_scored_this_rally = false
 	visible = true
+	# Без явной очистки лента следа попыталась бы соединить точки у места
+	# предыдущего гола с новой стартовой позицией одним длинным "хвостом".
+	_clear_trail()
 
 
 func _check_paddle_hits(y_before: float, y_after: float) -> void:
@@ -248,4 +340,6 @@ func _check_out_of_bounds() -> void:
 func _score_point(winner: String) -> void:
 	_point_scored_this_rally = true
 	visible = false # не висеть в воздухе/за краем поля до следующей подачи
+	# Иначе лента следа осталась бы висеть на месте гола на весь goal_pause_seconds.
+	_clear_trail()
 	point_scored.emit(winner)
