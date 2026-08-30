@@ -9,12 +9,18 @@ extends Button
 
 const BOX_SIZE := 28.0
 const BORDER_WIDTH := 2.0
+# Тот же радиус, что у обводки выпадающего списка/кнопок (theme/neon_theme.tres,
+# StyleBoxFlat_button_*/StyleBoxFlat_option_*corner_radius) -- визуально одна
+# и та же скруглённость по всему UI паузы/настроек, не своя произвольная.
+const CORNER_RADIUS := 6
 const BOX_FILL := Color(0.05, 0.03, 0.12, 0.85)
 const BORDER_COLOR := Color(0, 0.9, 1, 1)
 const BORDER_COLOR_HOVER := Color(0.4, 1, 1, 1)
 const CHECK_COLOR := Color(0, 0.9, 1, 1)
 
 var _hovering := false
+var _style_normal: StyleBoxFlat
+var _style_hover: StyleBoxFlat
 
 
 func _ready() -> void:
@@ -26,11 +32,22 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 
+	_style_normal = _make_box_style(BORDER_COLOR)
+	_style_hover = _make_box_style(BORDER_COLOR_HOVER)
+
+
+func _make_box_style(border_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = BOX_FILL
+	style.border_color = border_color
+	style.set_border_width_all(BORDER_WIDTH)
+	style.set_corner_radius_all(CORNER_RADIUS)
+	return style
+
 
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, Vector2(BOX_SIZE, BOX_SIZE))
-	draw_rect(rect, BOX_FILL, true)
-	draw_rect(rect, BORDER_COLOR_HOVER if _hovering else BORDER_COLOR, false, BORDER_WIDTH)
+	draw_style_box(_style_hover if _hovering else _style_normal, rect)
 
 	if button_pressed:
 		var font := get_theme_default_font()
