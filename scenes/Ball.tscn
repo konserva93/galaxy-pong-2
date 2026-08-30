@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/ball.gd" id="1_ball"]
 
@@ -27,9 +27,19 @@ top_radius = 0.35
 bottom_radius = 0.35
 height = 0.02
 
+[sub_resource type="Gradient" id="Gradient_trail_shape"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_trail_shape"]
+gradient = SubResource("Gradient_trail_shape")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_trail"]
 shading_mode = 0
 albedo_color = Color(1, 0.6, 0.25, 1)
+albedo_texture = SubResource("GradientTexture2D_trail_shape")
 vertex_color_use_as_albedo = true
 transparency = 1
 emission_enabled = true
@@ -39,7 +49,7 @@ billboard_mode = 3
 
 [sub_resource type="QuadMesh" id="QuadMesh_trail"]
 material = SubResource("StandardMaterial3D_trail")
-size = Vector2(0.25, 0.25)
+size = Vector2(0.3, 0.3)
 
 [sub_resource type="Gradient" id="Gradient_trail"]
 colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
@@ -76,7 +86,7 @@ light_energy = 1.2
 omni_range = 3.0
 
 [node name="Trail" type="GPUParticles3D" parent="."]
-amount = 40
+amount = 64
 lifetime = 0.35
 local_coords = false
 draw_pass_1 = SubResource("QuadMesh_trail")

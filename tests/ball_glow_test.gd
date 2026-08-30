@@ -62,6 +62,17 @@ func _check_light_and_trail_setup(ball: Area3D) -> void:
 	_ok = _ok and trail.local_coords == false
 	_ok = _ok and trail.process_material != null
 
+	# Регрессия: изначально частицы были голыми квадратами QuadMesh без текстуры
+	# -- визуально читалось как "квадратики" вместо плавного следа (замечено
+	# пользователем при живом просмотре). Радиальный градиент на albedo_texture
+	# даёт мягкий круглый спад альфы вместо жёсткого края квадрата.
+	var trail_mat: StandardMaterial3D = trail.draw_pass_1.material
+	print("trail_mat.albedo_texture=%s" % trail_mat.albedo_texture if trail_mat else null)
+	_ok = _ok and trail_mat != null
+	_ok = _ok and trail_mat != null and trail_mat.albedo_texture is GradientTexture2D
+	if trail_mat != null and trail_mat.albedo_texture is GradientTexture2D:
+		_ok = _ok and trail_mat.albedo_texture.fill == GradientTexture2D.FILL_RADIAL
+
 
 func _check_intensity_scales_with_speed(ball: Area3D) -> void:
 	print("--- light energy and trail amount_ratio grow with ball speed, not constant ---")
