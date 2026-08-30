@@ -34,6 +34,7 @@ func _run() -> void:
 
 	_check_settings_toggle(game_manager, pause_menu)
 	await _check_controls_reflect_and_apply(pause_menu, settings)
+	await _check_sfx_slider_previews_hit_sound(main, pause_menu, game_manager)
 	_check_closing_pause_resets_to_main_panel(game_manager, pause_menu)
 
 	_delete_settings_file(settings)
@@ -89,6 +90,28 @@ func _check_controls_reflect_and_apply(pause_menu: Control, settings: Node) -> v
 	await physics_frame # value_changed -> Settings.set_sfx_volume, дать сигналу дойти
 	print("after moving SFX slider to 0.25: Settings.sfx_volume=%.2f" % settings.sfx_volume)
 	_ok = _ok and is_equal_approx(settings.sfx_volume, 0.25)
+
+
+func _check_sfx_slider_previews_hit_sound(main: Node3D, pause_menu: Control, game_manager: Node) -> void:
+	print("--- moving the SFX slider plays the paddle-hit sound as a live volume preview ---")
+
+	# Проверяем именно во время паузы -- ровно так это будет использоваться в
+	# игре (настройки открываются только из меню паузы), и это же регрессия
+	# для process_mode=Always на узле Audio (иначе звук молчал бы, пока
+	# get_tree().paused=true).
+	game_manager.toggle_pause()
+
+	var paddle_hit_sound: AudioStreamPlayer = main.get_node("Audio/PaddleHitSound")
+	paddle_hit_sound.stop()
+
+	var sfx_slider: HSlider = pause_menu.get_node("SettingsPanel/VBoxContainer/SfxRow/SfxSlider")
+	sfx_slider.value = 0.7
+	await process_frame # value_changed -> Settings.set_sfx_volume -> sfx_previewed -> main._on_paddle_hit
+
+	print("after moving SFX slider while paused: paddle_hit_sound.playing=%s" % paddle_hit_sound.playing)
+	_ok = _ok and paddle_hit_sound.playing
+
+	game_manager.toggle_pause()
 
 
 func _check_closing_pause_resets_to_main_panel(game_manager: Node, pause_menu: Control) -> void:

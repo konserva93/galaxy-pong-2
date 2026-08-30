@@ -29,6 +29,12 @@ const RESOLUTIONS: Array[Vector2i] = [
 const MUSIC_BUS := "Music"
 const SFX_BUS := "SFX"
 
+## main.gd слушает это, чтобы проиграть звук удара весла как живое превью
+## новой громкости эффектов -- отдельного превью для музыки не нужно: она,
+## в отличие от SFX, играет непрерывно и так (см. process_mode на "Audio" в
+## Main.tscn), новую громкость слышно сразу без специального сигнала.
+signal sfx_previewed
+
 var resolution_index: int = 0
 var fullscreen: bool = false
 var music_volume: float = 1.0 # линейно, 0..1
@@ -82,9 +88,20 @@ func set_sfx_volume(linear: float) -> void:
 	sfx_volume = clampf(linear, 0.0, 1.0)
 	_apply_bus_volume(SFX_BUS, sfx_volume)
 	_save()
+	sfx_previewed.emit()
 
 
 func _apply_window() -> void:
+	# В редакторе игра часто запускается во встроенном окне (Debug > Embed
+	# Game Window, включено по умолчанию в новых версиях Godot) -- им нельзя
+	# управлять из самой игры, DisplayServer тут же и без пользы шлёт в лог
+	# "Embedded window can't be resized/moved". В реальном билде (и в обычном
+	# отдельном окне редактора) get_window() не embedded, и ветка ниже
+	# отрабатывает как обычно.
+	var window := get_window()
+	if window != null and window.is_embedded():
+		return
+
 	DisplayServer.window_set_mode(
 		DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	)
