@@ -9,6 +9,11 @@ extends Control
 @onready var _restart_button: Button = $CenterContainer/VBoxContainer/RestartButton
 @onready var _exit_button: Button = $CenterContainer/VBoxContainer/ExitButton
 
+# Те же оттенки, что у весла игрока/AI (см. PlayerPaddle.tscn/AIPaddle.tscn) —
+# текст победителя подсвечивается его собственным неоновым цветом.
+const PLAYER_COLOR := Color(0, 0.9, 1, 1)
+const AI_COLOR := Color(1, 0.2, 0.55, 1)
+
 
 func _ready() -> void:
 	visible = false
@@ -30,6 +35,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_game_over(winner: String) -> void:
 	_winner_label.text = "Ты выиграл!" if winner == "player" else "AI выиграл"
+	var color := PLAYER_COLOR if winner == "player" else AI_COLOR
+	_winner_label.add_theme_color_override("font_color", color)
+	_winner_label.add_theme_color_override("font_shadow_color", Color(color.r, color.g, color.b, 0.9))
 	visible = true
 
 

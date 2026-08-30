@@ -60,6 +60,12 @@ func _check_game_over_shows_screen_and_freezes(game_manager: Node, player: Area3
 	_ok = _ok and screen.visible
 	_ok = _ok and winner_label.text == "Ты выиграл!"
 
+	# Задача 6.5: текст победителя подсвечивается его собственным неоновым
+	# цветом (тот же циан, что у весла игрока -- см. PlayerPaddle.tscn).
+	var font_color: Color = winner_label.get_theme_color("font_color")
+	print("winner_label font_color=%s (expect player cyan)" % font_color)
+	_ok = _ok and font_color.is_equal_approx(Color(0, 0.9, 1, 1))
+
 	# Вёсла тоже должны стоять на месте, не только мяч.
 	var player_pos_before: Vector3 = player.position
 	var ai_pos_before: Vector3 = ai.position
