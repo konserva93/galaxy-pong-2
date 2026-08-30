@@ -31,10 +31,10 @@ extends Area3D
 const SHADOW_GROUND_Y: float = 0.02
 const SHADOW_MIN_SCALE: float = 0.35
 const SHADOW_HEIGHT_SHRINK_FACTOR: float = 0.15
-# Половина толщины меша весла (0.3) плюс небольшой зазор, чтобы тень лежала
-# поверх весла, а не внутри его коробки. Подогнать, если толщина меша весла
-# изменится.
-const SHADOW_PADDLE_SURFACE_OFFSET: float = 0.17
+# Половина толщины меша весла (0.15, см. PlayerPaddle.tscn/AIPaddle.tscn) плюс
+# небольшой зазор, чтобы тень лежала поверх весла, а не внутри его коробки.
+# Подогнать, если толщина меша весла изменится.
+const SHADOW_PADDLE_SURFACE_OFFSET: float = 0.1
 
 signal point_scored(winner: String) # "player" или "ai"
 signal paddle_hit # для звука удара (задача 5.2) — без параметров, самого факта отбития достаточно

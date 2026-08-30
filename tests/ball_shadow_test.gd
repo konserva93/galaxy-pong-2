@@ -63,7 +63,7 @@ func _check_paddle_surface(ball: Area3D, shadow: MeshInstance3D, paddle: Area3D)
 	ball.position = Vector3(0.0, 3.0, 5.0) # прямо над веслом
 	await physics_frame
 	var world_shadow_y: float = ball.position.y + shadow.position.y
-	var expected_on_paddle: float = paddle.paddle_hit_height + 0.17
+	var expected_on_paddle: float = paddle.paddle_hit_height + 0.1
 	print("over paddle: world_shadow_y=%.4f expected=%.4f" % [world_shadow_y, expected_on_paddle])
 	_ok = _ok and absf(world_shadow_y - expected_on_paddle) < 0.001
 
