@@ -3,11 +3,16 @@
 [ext_resource type="Script" path="res://scripts/paddle_player.gd" id="1_paddle"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_paddle"]
-albedo_color = Color(0, 0.9, 1, 1)
+albedo_color = Color(0, 0.35, 0.4, 1)
+emission_enabled = true
+emission = Color(0, 0.9, 1, 1)
+emission_energy_multiplier = 2.5
 
-[sub_resource type="BoxMesh" id="BoxMesh_paddle"]
+[sub_resource type="CylinderMesh" id="CylinderMesh_paddle"]
 material = SubResource("StandardMaterial3D_paddle")
-size = Vector3(2, 0.3, 1.8)
+top_radius = 1.0
+bottom_radius = 1.0
+height = 0.15
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_paddle"]
 size = Vector3(2, 0.3, 1.8)
@@ -17,7 +22,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 6)
 script = ExtResource("1_paddle")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_paddle")
+mesh = SubResource("CylinderMesh_paddle")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("BoxShape3D_paddle")

@@ -30,6 +30,15 @@ sky = SubResource("Sky_space")
 ambient_light_source = 2
 ambient_light_color = Color(0.6, 0.6, 0.65, 1)
 ambient_light_energy = 0.6
+tonemap_mode = 3
+fog_enabled = true
+fog_light_color = Color(0.05, 0.02, 0.1, 1)
+fog_density = 0.01
+glow_enabled = true
+glow_intensity = 0.9
+glow_strength = 1.1
+glow_bloom = 0.15
+glow_hdr_threshold = 0.9
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_star"]
 shading_mode = 0

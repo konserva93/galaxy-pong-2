@@ -3,11 +3,16 @@
 [ext_resource type="Script" uid="uid://diu3pkd6q2x3c" path="res://scripts/paddle_ai.gd" id="1_paddle_ai"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_paddle_ai"]
-albedo_color = Color(1, 0.2, 0.55, 1)
+albedo_color = Color(0.4, 0.08, 0.22, 1)
+emission_enabled = true
+emission = Color(1, 0.2, 0.55, 1)
+emission_energy_multiplier = 2.5
 
-[sub_resource type="BoxMesh" id="BoxMesh_paddle_ai"]
+[sub_resource type="CylinderMesh" id="CylinderMesh_paddle_ai"]
 material = SubResource("StandardMaterial3D_paddle_ai")
-size = Vector3(2, 0.3, 1.8)
+top_radius = 1.0
+bottom_radius = 1.0
+height = 0.15
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_paddle_ai"]
 size = Vector3(2, 0.3, 1.8)
@@ -18,7 +23,7 @@ script = ExtResource("1_paddle_ai")
 ai_paddle_speed = 5.0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1528858298]
-mesh = SubResource("BoxMesh_paddle_ai")
+mesh = SubResource("CylinderMesh_paddle_ai")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1750086622]
 shape = SubResource("BoxShape3D_paddle_ai")
