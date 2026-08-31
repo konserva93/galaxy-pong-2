@@ -57,6 +57,7 @@ func _run() -> void:
 	await _check_point_scored_plays_sound(ball, goal_sound)
 	_check_relative_volume(paddle_hit_sound, goal_sound, ambient_music)
 	await _check_ambient_actually_loops_past_clip_end(ambient_music)
+	await _check_music_keeps_playing_while_paused(game_manager, ambient_music)
 
 	print("RESULT: ", "PASS" if _ok else "FAIL")
 	quit(0 if _ok else 1)
@@ -123,3 +124,22 @@ func _check_ambient_actually_loops_past_clip_end(ambient_music: AudioStreamPlaye
 	print("after %.1fs (clip is %.1fs): playing=%s playback_position=%.2f (expect true, wrapped near 0, not stuck at end)" % [wait_seconds, clip_length, ambient_music.playing, ambient_music.get_playback_position()])
 	_ok = _ok and ambient_music.playing
 	_ok = _ok and ambient_music.get_playback_position() < clip_length * 0.5
+
+
+func _check_music_keeps_playing_while_paused(game_manager: Node, ambient_music: AudioStreamPlayer) -> void:
+	print("--- ambient music keeps playing while paused (menu should stay audible), not frozen by get_tree().paused ---")
+
+	game_manager.toggle_pause()
+	var position_at_pause: float = ambient_music.get_playback_position()
+
+	var start_ms := Time.get_ticks_msec()
+	while (Time.get_ticks_msec() - start_ms) / 1000.0 < 0.3:
+		await process_frame
+
+	print("while paused: playing=%s position_before=%.3f position_after=%.3f" % [
+		ambient_music.playing, position_at_pause, ambient_music.get_playback_position()
+	])
+	_ok = _ok and ambient_music.playing
+	_ok = _ok and ambient_music.get_playback_position() > position_at_pause
+
+	game_manager.toggle_pause() # снять паузу, не оставлять дерево замороженным на выходе

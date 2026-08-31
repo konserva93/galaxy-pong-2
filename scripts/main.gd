@@ -18,6 +18,7 @@ func _ready() -> void:
 	_ball.point_scored.connect(GameManager.register_point)
 	_ball.point_scored.connect(_on_point_scored)
 	_ball.paddle_hit.connect(_on_paddle_hit)
+	Settings.sfx_previewed.connect(_on_paddle_hit)
 	GameManager.restart_requested.connect(_on_restart_requested)
 	GameManager.register_ball(_ball, _ball.position)
 	GameManager.start_first_serve()

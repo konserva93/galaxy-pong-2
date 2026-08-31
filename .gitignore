@@ -3,3 +3,7 @@
 /android/
 /build
 export_presets.cfg
+
+# Player-generated settings (scripts/settings.gd) -- saved next to the game,
+# which in the editor/dev context means the project root.
+/settings.cfg
