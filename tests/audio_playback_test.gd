@@ -52,6 +52,7 @@ func _run() -> void:
 	if ball.point_scored.is_connected(game_manager.register_point):
 		ball.point_scored.disconnect(game_manager.register_point)
 
+	_check_bus_assignment(paddle_hit_sound, goal_sound, ambient_music)
 	_check_ambient_playing_and_loop_configured(ambient_music)
 	await _check_paddle_hit_plays_sound(ball, paddle_hit_sound)
 	await _check_point_scored_plays_sound(ball, goal_sound)
@@ -61,6 +62,25 @@ func _run() -> void:
 
 	print("RESULT: ", "PASS" if _ok else "FAIL")
 	quit(0 if _ok else 1)
+
+
+func _check_bus_assignment(paddle_hit_sound: AudioStreamPlayer, goal_sound: AudioStreamPlayer, ambient_music: AudioStreamPlayer) -> void:
+	print("--- SFX/music players are actually routed to the SFX/Music buses, not left on Master ---")
+
+	# Регрессия для бага, найденного 2026-08-31: в ЭКСПОРТИРОВАННОМ билде
+	# (не воспроизводилось ни в редакторе, ни здесь headless-тестами --
+	# найдено только через диагностику в реальном .exe) статическое
+	# bus="SFX"/"Music" в Main.tscn резолвилось в "Master" -- похоже на гонку
+	# с загрузкой audio/default_bus_layout.tres. main.gd._ready() теперь
+	# назначает bus явным присваиванием в коде; эта проверка не ловит саму
+	# гонку (headless её не воспроизводит), но защищает от возврата к
+	# исключительно сценовому назначению без явного кода.
+	print("PaddleHitSound.bus=%s GoalSound.bus=%s AmbientMusic.bus=%s" % [
+		paddle_hit_sound.bus, goal_sound.bus, ambient_music.bus
+	])
+	_ok = _ok and paddle_hit_sound.bus == "SFX"
+	_ok = _ok and goal_sound.bus == "SFX"
+	_ok = _ok and ambient_music.bus == "Music"
 
 
 func _check_ambient_playing_and_loop_configured(ambient_music: AudioStreamPlayer) -> void:

@@ -14,6 +14,16 @@ extends Node3D
 
 
 func _ready() -> void:
+	# Шину надёжнее назначать в коде, а не полагаться на bus="SFX"/"Music" в
+	# самой .tscn: в экспортированном билде (не в редакторе) статическое
+	# значение из сцены резолвится в "Master" -- похоже на гонку, где узел
+	# получает бас до того, как audio/default_bus_layout.tres (project.godot)
+	# точно догружен. Settings (autoload) -- предыдущий по порядку, к этому
+	# моменту шины уже точно существуют.
+	_paddle_hit_sound.bus = "SFX"
+	_goal_sound.bus = "SFX"
+	_ambient_music.bus = "Music"
+
 	_camera.look_at(Vector3.ZERO, Vector3.UP)
 	_ball.point_scored.connect(GameManager.register_point)
 	_ball.point_scored.connect(_on_point_scored)
