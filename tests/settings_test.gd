@@ -32,6 +32,7 @@ func _run() -> void:
 
 	_check_defaults(settings)
 	_check_resolution_and_fullscreen(settings)
+	_check_resolution_filtering_by_native_size(settings)
 	_check_volume_applies_to_bus(settings)
 	_check_persists_to_disk(settings)
 
@@ -64,16 +65,43 @@ func _check_resolution_and_fullscreen(settings: Node) -> void:
 	settings.set_resolution_index(2)
 	_ok = _ok and settings.resolution_index == 2
 
-	settings.set_resolution_index(999) # за пределами RESOLUTIONS -- должно clamp'иться, не упасть
+	settings.set_resolution_index(999) # за пределами available_resolutions -- должно clamp'иться, не упасть
 	print("out-of-range index clamped to %d (expect last valid, %d)" % [
-		settings.resolution_index, settings.RESOLUTIONS.size() - 1
+		settings.resolution_index, settings.available_resolutions.size() - 1
 	])
-	_ok = _ok and settings.resolution_index == settings.RESOLUTIONS.size() - 1
+	_ok = _ok and settings.resolution_index == settings.available_resolutions.size() - 1
 
 	settings.set_fullscreen(true)
 	_ok = _ok and settings.fullscreen == true
 	settings.set_fullscreen(false)
 	_ok = _ok and settings.fullscreen == false
+
+
+func _check_resolution_filtering_by_native_size(settings: Node) -> void:
+	print("--- resolution list drops presets bigger than native and adds native itself if missing ---")
+
+	# native == один из пресетов ровно -- не должно раздуться дублем, но
+	# пресеты КРУПНЕЕ native всё равно отсекаются (3 из 5: 1280x720/1600x900/
+	# 1920x1080 -- 2560x1440 и 3840x2160 больше native).
+	var exact_match: Array[Vector2i] = settings._filter_resolutions_for_native(Vector2i(1920, 1080))
+	print("native=1920x1080 (exact preset match): %s" % [exact_match])
+	_ok = _ok and exact_match.size() == 3
+	_ok = _ok and exact_match.has(Vector2i(1920, 1080))
+	_ok = _ok and not exact_match.has(Vector2i(2560, 1440)) # крупнее native -- не должно быть в списке
+
+	# native между пресетами, не совпадает ни с одним -- добавляется, крупнее себя отсекает.
+	var odd_native: Array[Vector2i] = settings._filter_resolutions_for_native(Vector2i(2200, 1238))
+	print("native=2200x1238 (no exact preset match): %s" % [odd_native])
+	_ok = _ok and odd_native.has(Vector2i(2200, 1238))
+	_ok = _ok and odd_native.has(Vector2i(1920, 1080)) # меньше native -- остаётся
+	_ok = _ok and not odd_native.has(Vector2i(2560, 1440)) # крупнее native -- отсеян
+	_ok = _ok and not odd_native.has(Vector2i(3840, 2160))
+	_ok = _ok and odd_native[odd_native.size() - 1] == Vector2i(2200, 1238) # добавлен в порядке сортировки по площади, а не просто в конец списка как попало
+
+	# Нет данных о мониторе (headless и т.п.) -- полный список пресетов без изменений.
+	var no_screen: Array[Vector2i] = settings._filter_resolutions_for_native(Vector2i(0, 0))
+	print("native=0x0 (no screen info): count=%d (expect %d, unfiltered)" % [no_screen.size(), settings.RESOLUTION_PRESETS.size()])
+	_ok = _ok and no_screen.size() == settings.RESOLUTION_PRESETS.size()
 
 
 func _check_volume_applies_to_bus(settings: Node) -> void:

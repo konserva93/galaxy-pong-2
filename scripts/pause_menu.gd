@@ -73,7 +73,7 @@ func _show_main_panel() -> void:
 
 func _populate_resolution_options() -> void:
 	_resolution_option.clear()
-	for resolution in Settings.RESOLUTIONS:
+	for resolution in Settings.available_resolutions:
 		_resolution_option.add_item("%d × %d" % [resolution.x, resolution.y])
 
 

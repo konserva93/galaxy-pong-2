@@ -18,7 +18,11 @@ extends Node
 ## (обычный Play, headless-скрипты/тесты — вообще всё, кроме реально
 ## экспортированной игры), для этих случаев "рядом с игрой" — корень проекта.
 
-const RESOLUTIONS: Array[Vector2i] = [
+## Кандидаты на список разрешений -- не обязательно то, что реально
+## показывается: см. _compute_available_resolutions() -- убирает варианты
+## крупнее нативного разрешения монитора и добавляет само нативное, если его
+## нет среди кандидатов.
+const RESOLUTION_PRESETS: Array[Vector2i] = [
 	Vector2i(1280, 720),
 	Vector2i(1600, 900),
 	Vector2i(1920, 1080),
@@ -35,6 +39,12 @@ const SFX_BUS := "SFX"
 ## Main.tscn), новую громкость слышно сразу без специального сигнала.
 signal sfx_previewed
 
+## Реальный список для выпадающего меню -- вычисляется один раз в _ready()
+## (до _load(), т.к. resolution_index клампится по его размеру). pause_menu.gd
+## строит пункты OptionButton по этому массиву, не по RESOLUTION_PRESETS
+## напрямую.
+var available_resolutions: Array[Vector2i] = []
+
 var resolution_index: int = 0
 var fullscreen: bool = false
 var music_volume: float = 1.0 # линейно, 0..1
@@ -45,10 +55,50 @@ var _settings_path: String = ""
 
 func _ready() -> void:
 	_settings_path = _resolve_settings_path()
+	available_resolutions = _compute_available_resolutions()
 	_load()
 	_apply_window()
 	_apply_bus_volume(MUSIC_BUS, music_volume)
 	_apply_bus_volume(SFX_BUS, sfx_volume)
+
+
+func _compute_available_resolutions() -> Array[Vector2i]:
+	return _filter_resolutions_for_native(DisplayServer.screen_get_size())
+
+
+## Отбрасывает пресеты крупнее нативного разрешения монитора (по любой оси --
+## показывать вариант, для которого окно не влезет на экран, бессмысленно) и
+## добавляет само нативное, если оно не совпадает ни с одним из оставшихся --
+## по прямому запросу. Принимает native параметром (не читает DisplayServer
+## сама), чтобы регрессионный тест мог проверить саму логику фильтрации с
+## разными "мониторами" без реального экрана.
+##
+## native <= 0 по любой оси (DisplayServer.screen_get_size() в headless-
+## контексте — тесты, --headless без реального экрана — возвращает (0, 0)) --
+## нет достоверных данных о мониторе, фильтрация ничего не даёт, кроме потери
+## всего списка, так что отдаём пресеты как есть.
+func _filter_resolutions_for_native(native: Vector2i) -> Array[Vector2i]:
+	if native.x <= 0 or native.y <= 0:
+		return RESOLUTION_PRESETS.duplicate()
+
+	var result: Array[Vector2i] = []
+	var native_included := false
+	for preset in RESOLUTION_PRESETS:
+		if preset.x > native.x or preset.y > native.y:
+			continue
+		result.append(preset)
+		if preset == native:
+			native_included = true
+
+	if not native_included:
+		result.append(native)
+		result.sort_custom(_by_area_ascending)
+
+	return result
+
+
+func _by_area_ascending(a: Vector2i, b: Vector2i) -> bool:
+	return a.x * a.y < b.x * b.y
 
 
 ## Путь к settings.cfg -- открыт (не приватный), чтобы регрессионные тесты
@@ -67,7 +117,7 @@ func _resolve_settings_path() -> String:
 
 
 func set_resolution_index(index: int) -> void:
-	resolution_index = clampi(index, 0, RESOLUTIONS.size() - 1)
+	resolution_index = clampi(index, 0, available_resolutions.size() - 1)
 	_apply_window()
 	_save()
 
@@ -106,7 +156,7 @@ func _apply_window() -> void:
 		DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	)
 	if not fullscreen:
-		DisplayServer.window_set_size(RESOLUTIONS[resolution_index])
+		DisplayServer.window_set_size(available_resolutions[resolution_index])
 		var screen_size := DisplayServer.screen_get_size()
 		var window_size := DisplayServer.window_get_size()
 		DisplayServer.window_set_position((screen_size - window_size) / 2)
@@ -139,7 +189,7 @@ func _load() -> void:
 		return # первый запуск / файла ещё нет -- остаёмся на значениях по умолчанию
 
 	resolution_index = clampi(
-		config.get_value("display", "resolution_index", resolution_index), 0, RESOLUTIONS.size() - 1
+		config.get_value("display", "resolution_index", resolution_index), 0, available_resolutions.size() - 1
 	)
 	fullscreen = config.get_value("display", "fullscreen", fullscreen)
 	music_volume = clampf(config.get_value("audio", "music_volume", music_volume), 0.0, 1.0)
